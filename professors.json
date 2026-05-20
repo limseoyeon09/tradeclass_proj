@@ -1,0 +1,578 @@
+[
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "양하늬",
+    "office": "창5505",
+    "phone": "051-606-2323",
+    "email": "chickeny@ksa.hs.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "여인아",
+    "office": "창303",
+    "phone": "051-606-2219",
+    "email": "inahyeo7@gmail.com"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "김병주",
+    "office": "탐2401",
+    "phone": "051-606-2243",
+    "email": "kbjpen@naver.com"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "강태연",
+    "office": "창5502",
+    "phone": "051-606-2391",
+    "email": "teyoun@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "심재훈",
+    "office": "창5502",
+    "phone": "051-606-2341",
+    "email": "jaehoon.sim@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "김현벽",
+    "office": "창5306",
+    "phone": "",
+    "email": "kimhyunbyuk@ksa.hs.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "전병억",
+    "office": "창5507",
+    "phone": "",
+    "email": "chai2jun@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "물리",
+    "name": "이정훈",
+    "office": "창5507",
+    "phone": "051-606-2224",
+    "email": "jhlee0218@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "융합",
+    "name": "최현정",
+    "office": "탐2407",
+    "phone": "",
+    "email": "costalian@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "지구과학",
+    "name": "박선미",
+    "office": "창5504",
+    "phone": "051-606-2241",
+    "email": "smpark88@gmail.com"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "지구과학",
+    "name": "서미라",
+    "office": "탐2401",
+    "phone": "",
+    "email": "mrseo165@gmail.com"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "지구과학",
+    "name": "박창현",
+    "office": "",
+    "phone": "",
+    "email": "idrpak@pusan.ac.kr"
+  },
+  {
+    "dept": "물리지구과학부",
+    "area": "지구과학",
+    "name": "송은지",
+    "office": "",
+    "phone": "",
+    "email": "ejsong0510@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "이지호",
+    "office": "형3503",
+    "phone": "051-606-2284",
+    "email": "efidiaf@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "박윤주",
+    "office": "형3504",
+    "phone": "051-606-2387",
+    "email": "parkyunju@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "강범틀",
+    "office": "형3502",
+    "phone": "",
+    "email": "thelokbt@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "이동수",
+    "office": "형3505",
+    "phone": "",
+    "email": "lee.dongsoo@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "이진희",
+    "office": "형3504",
+    "phone": "",
+    "email": "jhyi1000@gmail.com"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "정명주",
+    "office": "형3501",
+    "phone": "",
+    "email": "mjjeong@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "박효원",
+    "office": "창5710",
+    "phone": "051-606-2355",
+    "email": "parkhyowon@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "임봉학",
+    "office": "형3508",
+    "phone": "051-606-2205",
+    "email": "ibk0504@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "김효진",
+    "office": "형3502",
+    "phone": "051-606-2385",
+    "email": "hyojinkim@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "김용덕",
+    "office": "형3401",
+    "phone": "051-606-2282",
+    "email": "ydkimjia67@gmail.com"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "김훈",
+    "office": "창5710",
+    "phone": "051-606-2354",
+    "email": "hunkim@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "Jerome Tambour",
+    "office": "형3507",
+    "phone": "",
+    "email": "jerome@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "임종렬",
+    "office": "형3508",
+    "phone": "051-606-2204",
+    "email": "limjongryul@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "송민경",
+    "office": "형3505",
+    "phone": "051-606-2227",
+    "email": "mksong@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "김정은",
+    "office": "형3503",
+    "phone": "051-606-2386",
+    "email": "jkim.math@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "전영철",
+    "office": "형3508",
+    "phone": "051-606-2205",
+    "email": "jeonyoungcheol@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "수학",
+    "name": "김종민",
+    "office": "형3507",
+    "phone": "051-606-2149",
+    "email": "kimjongmin@ksa.hs.kr"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "정보과학",
+    "name": "윤상현",
+    "office": "창5707",
+    "phone": "051-606-2373",
+    "email": "dm.ksa@gmail.com"
+  },
+  {
+    "dept": "수리정보과학부",
+    "area": "정보과학",
+    "name": "김호숙",
+    "office": "창3506",
+    "phone": "051-606-2280",
+    "email": "khosook@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "국어과",
+    "name": "김형성",
+    "office": "형3509",
+    "phone": "",
+    "email": "gudtjd1004@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "국어과",
+    "name": "김진실",
+    "office": "형3103",
+    "phone": "051-606-2262",
+    "email": "kjinsil@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "국어과",
+    "name": "여경은",
+    "office": "형3104",
+    "phone": "051-606-2248",
+    "email": "kkwmomy@hanmail.net"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "국어과",
+    "name": "김동화",
+    "office": "본1210",
+    "phone": "051-606-2248",
+    "email": "korea8686@ksa.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "국어과",
+    "name": "홍정현",
+    "office": "형3509",
+    "phone": "051-606-2249",
+    "email": "symbolist@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "국어과",
+    "name": "전정미",
+    "office": "",
+    "phone": "",
+    "email": "jjm@pusan.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "사회과",
+    "name": "김재영",
+    "office": "형3510",
+    "phone": "",
+    "email": "zyghim@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "사회과",
+    "name": "성진희",
+    "office": "",
+    "phone": "",
+    "email": "jiny8029@naver.com"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "사회과",
+    "name": "구본혁",
+    "office": "형3105",
+    "phone": "",
+    "email": "bonhyukkoo@ksa.hs.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "사회과",
+    "name": "한형근",
+    "office": "형3103",
+    "phone": "051-606-2263",
+    "email": "ksahkhan@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "사회과",
+    "name": "윤성오",
+    "office": "형3104",
+    "phone": "010-8401-8162",
+    "email": "sungoh.yoon@ksa.hs.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "예술체육과",
+    "name": "박형진",
+    "office": "예6501",
+    "phone": "",
+    "email": "hjpark@ks.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "예술체육과",
+    "name": "이용선",
+    "office": "예6501",
+    "phone": "051-606-2239",
+    "email": "itsgotime@kas.kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "예술체육과",
+    "name": "김나울",
+    "office": "예6403",
+    "phone": "",
+    "email": "naulkim@pusan.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "예술체육과",
+    "name": "박주영",
+    "office": "예6403",
+    "phone": "051-606-2307",
+    "email": "Parkjooyoung@ksa.hs.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "예술체육과",
+    "name": "김성배",
+    "office": "예6301",
+    "phone": "",
+    "email": "sbgedda@hanmail.net"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "예술체육과",
+    "name": "송종헌",
+    "office": "",
+    "phone": "",
+    "email": "jsong54@kaist.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "예술체육과",
+    "name": "윤여민",
+    "office": "예6301",
+    "phone": "",
+    "email": "yunym16@ksa.kais.ac.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "Syed Jose Hussain",
+    "office": "탐2309",
+    "phone": "",
+    "email": "syed@ksa.hs.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "Nathan Roberts",
+    "office": "탐2209",
+    "phone": "",
+    "email": "natearoberts@gmail.com"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "김영미",
+    "office": "형3301",
+    "phone": "",
+    "email": "kimyoungmee@ksa.hs.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "김주환",
+    "office": "탐2309",
+    "phone": "051-606-2217",
+    "email": "amstkim@gmail.com"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "Kevin Anderson",
+    "office": "탐2208",
+    "phone": "051-606-2216",
+    "email": "anderson@ksa.hs.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "이수은",
+    "office": "형3102",
+    "phone": "",
+    "email": "terelee@naver.com"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "김은영",
+    "office": "형3102",
+    "phone": "",
+    "email": "jinyinling@hanmail.net"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "김현숙",
+    "office": "형3102",
+    "phone": "",
+    "email": "wakihama@naver.com"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "Casey Stojak",
+    "office": "",
+    "phone": "",
+    "email": "casey@ksa.hs.kr"
+  },
+  {
+    "dept": "인문예술학부",
+    "area": "외국어과",
+    "name": "박영민",
+    "office": "",
+    "phone": "",
+    "email": "techwhiz@ksa.hs.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "생물",
+    "name": "박기엽",
+    "office": "탐2203",
+    "phone": "051-606-2225",
+    "email": "kiyoub@gmail.com"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "생물",
+    "name": "권창섭",
+    "office": "창5402",
+    "phone": "051-606-2220",
+    "email": "cskwon@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "생물",
+    "name": "고인정",
+    "office": "창5403",
+    "phone": "051-606-2321",
+    "email": "koin2@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "생물",
+    "name": "안정훈",
+    "office": "창5403",
+    "phone": "051-606-2335",
+    "email": "hoony@kaist.ac.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "한상준",
+    "office": "탐2103",
+    "phone": "051-606-2210",
+    "email": "eipiplus1@ksa.kasita.c.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "천만석",
+    "office": "창5606",
+    "phone": "051-606-2340",
+    "email": "manstone@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "이여산",
+    "office": "탐2505",
+    "phone": "051-606-2286",
+    "email": "yeosanksa@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "박선화",
+    "office": "창5604",
+    "phone": "051-606-2378",
+    "email": "spark1122@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "오진호",
+    "office": "창5602",
+    "phone": "051-606-2392",
+    "email": "ohjinho1@ksa.hs.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "김건우",
+    "office": "창5603",
+    "phone": "051-606-2330",
+    "email": "gonukim82@ksa.kaist.ac.kr"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "김원전",
+    "office": "탐2103",
+    "phone": "051-606-2276",
+    "email": "chem4u@naver.com"
+  },
+  {
+    "dept": "화학생물학부",
+    "area": "화학",
+    "name": "조철희",
+    "office": "창5604",
+    "phone": "051-606-2361",
+    "email": "chulcho@ksa.kaist.ac.kr"
+  }
+]
