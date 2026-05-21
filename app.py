@@ -422,3 +422,442 @@ if __name__=="__main__":
     port=int(os.environ.get("PORT",5000))
     debug=os.environ.get("FLASK_DEBUG","true").lower()=="true"
     app.run(host="0.0.0.0",port=port,debug=debug)
+
+# ================================================================
+# 카카오 오픈빌더 스킬 서버
+# app.py 맨 아래에 붙여넣기
+# ================================================================
+
+# 카카오 사용자별 학번 저장 (uid → sid)
+_kakao_users: Dict[str, str] = {}
+
+
+# ── 응답 헬퍼 ────────────────────────────────────────────────────
+
+def _text(msg, buttons=None):
+    """텍스트 응답 + 버튼(선택)"""
+    resp = {
+        "version": "2.0",
+        "template": {
+            "outputs": [{"simpleText": {"text": msg}}]
+        }
+    }
+    if buttons:
+        resp["template"]["quickReplies"] = buttons
+    return jsonify(resp)
+
+
+def _btn(label, msg=None):
+    """빠른답변 버튼 하나"""
+    return {
+        "label": label,
+        "action": "message",
+        "messageText": msg or label
+    }
+
+
+def _menu_btns():
+    """메인 메뉴 버튼 4개"""
+    return [
+        _btn("📅 내 시간표"),
+        _btn("🔀 트레이드 신청"),
+        _btn("📊 결과 확인"),
+        _btn("📞 선생님 연락망"),
+    ]
+
+
+# ── 메인 스킬 엔드포인트 ─────────────────────────────────────────
+
+@app.route("/kakao", methods=["POST"])
+def kakao():
+    d         = request.get_json(force=True)
+    utterance = d.get("userRequest", {}).get("utterance", "").strip()
+    uid       = d.get("userRequest", {}).get("user", {}).get("id", "")
+
+    sid = _kakao_users.get(uid)  # 저장된 학번
+
+    # ── 1) 학번 미등록 상태 ──────────────────────────────────────
+    if not sid:
+        # 학번 형식이면 등록
+        m = re.match(r"^(\d{2})-?(\d{3})$", utterance)
+        if m:
+            new_sid = f"{m.group(1)}-{m.group(2)}"
+            if new_sid in STUDENTS:
+                _kakao_users[uid] = new_sid
+                name = STUDENTS[new_sid]["name"]
+                return _text(
+                    f"✅ 인증 완료!\n{name}님 환영해요 👋\n\n무엇을 도와드릴까요?",
+                    _menu_btns()
+                )
+            else:
+                return _text(
+                    f"❌ {new_sid}은 등록되지 않은 학번이에요.\n다시 입력해주세요.\n예) 25-096"
+                )
+        # 학번 미입력
+        return _text(
+            "안녕하세요! TradeTable입니다 🟡\n\n학번을 입력해주세요.\n예) 25-096"
+        )
+
+    # ── 2) 메뉴 / 처음으로 ──────────────────────────────────────
+    if utterance in ["메뉴", "처음으로", "홈", "시작"]:
+        name = STUDENTS.get(sid, {}).get("name", "")
+        return _text(
+            f"{name}님, 무엇을 도와드릴까요?",
+            _menu_btns()
+        )
+
+    # ── 3) 내 시간표 ────────────────────────────────────────────
+    if utterance in ["📅 내 시간표", "내 시간표", "시간표"]:
+        return _kakao_timetable(sid)
+
+    # ── 4) 트레이드 신청 ─────────────────────────────────────────
+    if utterance in ["🔀 트레이드 신청", "트레이드 신청", "신청"]:
+        return _kakao_trade(sid)
+
+    # ── 5) 결과 확인 ────────────────────────────────────────────
+    if utterance in ["📊 결과 확인", "결과 확인", "결과"]:
+        return _kakao_result(sid)
+
+    # ── 6) 선생님 연락망 ─────────────────────────────────────────
+    if utterance in ["📞 선생님 연락망", "선생님 연락망", "연락망", "연락처"]:
+        return _kakao_prof_menu()
+
+    # 학부 선택
+    if utterance in ["수리정보과학부", "물리지구과학부", "인문예술학부", "화학생물학부"]:
+        return _kakao_prof_by_dept(utterance)
+
+    # 이름 검색: "검색 홍길동"
+    if utterance.startswith("검색 "):
+        name_q = utterance[3:].strip()
+        return _kakao_prof_search(name_q)
+
+    # ── 7) 폴백 ─────────────────────────────────────────────────
+    return _text(
+        "죄송해요, 잘 이해하지 못했어요 😅\n아래 메뉴에서 선택해주세요.",
+        _menu_btns()
+    )
+
+
+# ── 내 시간표 ───────────────────────────────────────────────────
+
+def _kakao_timetable(sid):
+    enrolled, _ = get_timetable(sid)
+    if not enrolled:
+        return _text("시간표 정보가 없어요.", [_btn("🏠 메뉴로")])
+
+    DAYS = ["월", "화", "수", "목", "금"]
+
+    # 교시별 수업 정리
+    schedule = {}   # (요일, 교시) → 과목명
+    for e in enrolled:
+        for sl in e.get("slots", []):
+            schedule[(sl["d"], sl["p"])] = e["course"]
+
+    # 표 형식으로 출력
+    lines = ["📅 내 시간표\n"]
+    lines.append("교시 | 월  | 화  | 수  | 목  | 금")
+    lines.append("─────────────────────────────")
+
+    for p in range(1, 10):
+        row_cells = []
+        has_class = False
+        for d in DAYS:
+            course = schedule.get((d, p), "")
+            # 과목명 4글자로 맞추기
+            if course:
+                has_class = True
+                short = course[:3]
+            else:
+                short = ""
+            row_cells.append(f"{short:<3}")
+        if has_class:
+            lines.append(f"  {p}교시 | {'|'.join(row_cells)}")
+
+    lines.append("\n─────────────────────────────")
+    lines.append(f"총 {len(enrolled)}개 과목")
+
+    return _text("\n".join(lines), [
+        _btn("🔀 트레이드 신청"),
+        _btn("🏠 메뉴로", "메뉴"),
+    ])
+
+
+# ── 트레이드 신청 ────────────────────────────────────────────────
+
+def _kakao_trade(sid):
+    if not is_period_open():
+        return _text(
+            "⚠️ 현재 트레이드 신청 기간이 아닙니다.\n신청 기간이 열리면 다시 시도해주세요.",
+            [_btn("🏠 메뉴로", "메뉴")]
+        )
+
+    enrolled, _ = get_timetable(sid)
+    tradeable = [
+        e for e in enrolled
+        if e["ck"] in COURSES and len(COURSES[e["ck"]]["sections"]) >= 2
+    ]
+
+    if not tradeable:
+        return _text(
+            "트레이드 가능한 과목이 없어요.",
+            [_btn("🏠 메뉴로", "메뉴")]
+        )
+
+    # 기존 신청 여부 표시
+    existing = _trade_requests.get(sid, [])
+    lines = ["🔀 트레이드 신청\n신청할 과목을 입력해주세요:\n"]
+
+    btns = []
+    for e in tradeable:
+        req = next((r for r in existing if r["course_key"] == e["ck"]), None)
+        status = " ✅" if req else ""
+        lines.append(f"• {e['course']} ({e['section']}분반){status}")
+        btns.append(_btn(f"{e['course']}{status}", f"과목선택 {e['ck']} {e['section']}"))
+
+    lines.append("\n아래 버튼에서 과목을 선택하세요.")
+
+    if existing:
+        btns.append(_btn("📤 신청 제출", "신청제출"))
+        btns.append(_btn("❌ 신청 취소", "신청취소"))
+
+    btns.append(_btn("🏠 메뉴로", "메뉴"))
+
+    return _text("\n".join(lines), btns[:6])
+
+
+@app.route("/kakao/select", methods=["POST"])
+def kakao_select():
+    """과목 선택 후 분반 목록 표시"""
+    d         = request.get_json(force=True)
+    utterance = d.get("userRequest", {}).get("utterance", "").strip()
+    uid       = d.get("userRequest", {}).get("user", {}).get("id", "")
+    sid       = _kakao_users.get(uid)
+
+    if not sid:
+        return _text("먼저 학번을 입력해주세요.")
+
+    # "과목선택 체육3(2) 5" 형식 파싱
+    parts = utterance.split(" ")
+    if len(parts) < 3:
+        return _text("과목 선택 오류입니다.", [_btn("🏠 메뉴로", "메뉴")])
+
+    ck       = parts[1]
+    my_sec   = parts[2]
+    cn       = ck.split("(")[0]
+    info     = COURSES.get(ck, {})
+    secs     = info.get("sections", {})
+    slots_map= info.get("slots", {})
+
+    lines = [f"📚 {cn} ({my_sec}분반)\n이동할 분반을 선택하세요:\n"]
+    btns  = []
+
+    for sec in sorted(secs.keys(), key=lambda x: int(x)):
+        if sec == my_sec:
+            continue
+        sl      = slots_map.get(sec, [])
+        sl_str  = " ".join(f"{s['d']}{s['p']}교시" for s in sl[:2])
+        label   = f"{sec}분반 ({sl_str})" if sl_str else f"{sec}분반"
+        btns.append(_btn(label, f"분반선택 {ck} {my_sec} {sec}"))
+
+    btns.append(_btn("↩️ 돌아가기", "🔀 트레이드 신청"))
+
+    return _text("\n".join(lines) + "아래에서 선택하세요.", btns[:6])
+
+
+@app.route("/kakao/wish", methods=["POST"])
+def kakao_wish():
+    """분반 선택 → 지망 추가"""
+    d         = request.get_json(force=True)
+    utterance = d.get("userRequest", {}).get("utterance", "").strip()
+    uid       = d.get("userRequest", {}).get("user", {}).get("id", "")
+    sid       = _kakao_users.get(uid)
+
+    if not sid:
+        return _text("먼저 학번을 입력해주세요.")
+
+    # "분반선택 체육3(2) 5 9" 형식 파싱
+    parts = utterance.split(" ")
+    if len(parts) < 4:
+        return _text("분반 선택 오류입니다.", [_btn("🏠 메뉴로", "메뉴")])
+
+    ck, from_sec, to_sec = parts[1], parts[2], parts[3]
+    cn = ck.split("(")[0]
+    enrolled, _ = get_timetable(sid)
+    name = STUDENTS.get(sid, {}).get("name", sid)
+
+    reqs = _trade_requests.get(sid, [])
+    req  = next((r for r in reqs if r["course_key"] == ck), None)
+
+    if req:
+        if to_sec not in req["to_sections"] and len(req["to_sections"]) < 3:
+            req["to_sections"].append(to_sec)
+    else:
+        reqs.append({
+            "sid": sid, "name": name,
+            "course_key": ck,
+            "from_section": from_sec,
+            "to_sections": [to_sec],
+            "enrolled": enrolled,
+            "ts": int(time.time())
+        })
+        _trade_requests[sid] = reqs
+
+    req = next((r for r in _trade_requests.get(sid, []) if r["course_key"] == ck), None)
+    wish_str = " → ".join(
+        f"{i+1}지망 {s}분반" for i, s in enumerate(req["to_sections"])
+    ) if req else f"1지망 {to_sec}분반"
+
+    return _text(
+        f"✅ {cn} 신청 추가!\n{from_sec}분반 → {wish_str}\n\n다른 과목도 추가하거나 제출하세요.",
+        [
+            _btn("🔀 다른 과목 추가", "🔀 트레이드 신청"),
+            _btn("📤 신청 제출", "신청제출"),
+            _btn("🏠 메뉴로", "메뉴"),
+        ]
+    )
+
+
+@app.route("/kakao/submit", methods=["POST"])
+def kakao_submit():
+    """신청 최종 제출"""
+    d   = request.get_json(force=True)
+    uid = d.get("userRequest", {}).get("user", {}).get("id", "")
+    sid = _kakao_users.get(uid)
+
+    reqs = _trade_requests.get(sid, [])
+    if not reqs:
+        return _text("신청된 트레이드가 없어요.", [_btn("🏠 메뉴로", "메뉴")])
+
+    lines = ["📤 신청 완료!\n"]
+    for r in reqs:
+        cn    = r["course_key"].split("(")[0]
+        wishes = " / ".join(f"{i+1}지망 {s}분반" for i, s in enumerate(r["to_sections"]))
+        lines.append(f"• {cn}: {r['from_section']}분반 → {wishes}")
+
+    lines.append("\n관리자 매칭 후 '결과 확인'에서 확인하세요.")
+
+    return _text("\n".join(lines), [
+        _btn("📊 결과 확인"),
+        _btn("🏠 메뉴로", "메뉴"),
+    ])
+
+
+# ── 결과 확인 ────────────────────────────────────────────────────
+
+def _kakao_result(sid):
+    if not _last_match:
+        return _text(
+            "아직 매칭 결과가 없어요.\n관리자가 매칭을 실행하면 여기서 확인할 수 있어요.",
+            [_btn("🏠 메뉴로", "메뉴")]
+        )
+
+    my = next(
+        (s for s in _last_match.get("students", []) if s["sid"] == sid),
+        None
+    )
+
+    if not my:
+        return _text("이번 매칭에 내 신청 내역이 없어요.", [_btn("🏠 메뉴로", "메뉴")])
+
+    lines = ["📊 내 트레이드 결과\n"]
+
+    for t in my.get("successes", []):
+        cn = t["course_key"].split("(")[0]
+        lines.append(f"✅ {cn}: {t['from']}분반 → {t['to']}분반 성공!")
+
+    for t in my.get("failures", []):
+        cn = t["course_key"].split("(")[0]
+        lines.append(f"❌ {cn}: {t['from']}분반 → 실패")
+        lines.append(f"   교수님께 직접 분반 변경을 문의하세요.")
+
+    btns = [_btn("🏠 메뉴로", "메뉴")]
+    if any(my.get("failures", [])):
+        btns.insert(0, _btn("📞 선생님 연락망"))
+
+    return _text("\n".join(lines), btns)
+
+
+# ── 선생님 연락망 ────────────────────────────────────────────────
+
+def _kakao_prof_menu():
+    return _text(
+        "📞 선생님 연락망\n\n찾는 방법을 선택하세요.",
+        [
+            _btn("🏛 수리정보과학부", "수리정보과학부"),
+            _btn("🔭 물리지구과학부", "물리지구과학부"),
+            _btn("📚 인문예술학부",   "인문예술학부"),
+            _btn("🧪 화학생물학부",   "화학생물학부"),
+            _btn("🔍 이름으로 검색",  "이름검색"),
+            _btn("🏠 메뉴로",         "메뉴"),
+        ]
+    )
+
+
+def _kakao_prof_by_dept(dept):
+    profs = [p for p in PROFESSORS if p["dept"] == dept]
+
+    # 영역별로 그룹화해서 표시
+    from collections import defaultdict
+    by_area = defaultdict(list)
+    for p in profs:
+        by_area[p["area"]].append(p)
+
+    lines = [f"📞 {dept}\n"]
+    for area, members in by_area.items():
+        lines.append(f"[ {area} ]")
+        for p in members:
+            email = p.get("email", "-")
+            phone = p.get("phone", "-")
+            office = p.get("office", "-")
+            lines.append(f"• {p['name']}")
+            lines.append(f"  ✉️ {email}")
+            if phone != "-":
+                lines.append(f"  📞 {phone}")
+            if office != "-":
+                lines.append(f"  🏢 {office}")
+        lines.append("")
+
+    return _text("\n".join(lines), [
+        _btn("🔍 이름으로 검색", "이름검색"),
+        _btn("↩️ 학부 목록으로", "📞 선생님 연락망"),
+        _btn("🏠 메뉴로", "메뉴"),
+    ])
+
+
+def _kakao_prof_search(name_q):
+    results = [
+        p for p in PROFESSORS
+        if name_q in p.get("name", "")
+    ]
+
+    if not results:
+        return _text(
+            f"'{name_q}' 선생님을 찾을 수 없어요.\n다시 검색해주세요.\n\n검색 방법: 검색 홍길동",
+            [_btn("📞 선생님 연락망"), _btn("🏠 메뉴로", "메뉴")]
+        )
+
+    lines = [f"🔍 '{name_q}' 검색 결과\n"]
+    for p in results[:5]:
+        lines.append(f"• {p['name']} ({p['dept']} / {p['area']})")
+        lines.append(f"  ✉️ {p.get('email', '-')}")
+        if p.get("phone"):
+            lines.append(f"  📞 {p['phone']}")
+        if p.get("office"):
+            lines.append(f"  🏢 {p['office']}")
+        lines.append("")
+
+    return _text("\n".join(lines), [
+        _btn("🔍 다시 검색", "이름검색"),
+        _btn("🏠 메뉴로", "메뉴"),
+    ])
+
+
+# ── 이름 검색 안내 ───────────────────────────────────────────────
+
+@app.route("/kakao/name-search", methods=["POST"])
+def kakao_name_search():
+    return _text(
+        "🔍 선생님 이름 검색\n\n아래 형식으로 입력해주세요:\n검색 홍길동",
+        [_btn("↩️ 학부 목록으로", "📞 선생님 연락망"), _btn("🏠 메뉴로", "메뉴")]
+    )
+
