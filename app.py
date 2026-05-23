@@ -423,6 +423,7 @@ if __name__=="__main__":
     debug=os.environ.get("FLASK_DEBUG","true").lower()=="true"
     app.run(host="0.0.0.0",port=port,debug=debug)
 
+
 # ================================================================
 # 카카오 오픈빌더 스킬 서버 v3
 # app.py 맨 아래 if __name__ 블록 바로 위에 붙여넣기
@@ -801,6 +802,7 @@ def kakao_skill():
         return _ktext("비밀번호가 틀렸습니다.")
 
     if utt == "관리자매칭":
+        global _last_match
         all_reqs = []
         em = {}
         for s_id, reqs in _trade_requests.items():
@@ -814,7 +816,6 @@ def kakao_skill():
             return _ktext("신청된 트레이드가 없어요.", [_kbtn("🏠 메뉴로", "메뉴")])
         try:
             chosen, cycles = solve(all_reqs, em)
-            global _last_match
             _last_match = build_result(all_reqs, chosen, cycles)
             total_s = _last_match["total_success"]
             total_r = _last_match["total_requests"]
