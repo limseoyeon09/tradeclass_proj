@@ -475,7 +475,6 @@ import datetime as _dt
 _kakao_users: Dict[str, str] = {}   # uid → sid
 _kakao_admin: Dict[str, bool] = {}  # uid → is_admin
 
-
 # ── 응답 헬퍼 ──────────────────────────────────────────────────
 
 def _kt(msg, btns=None):
@@ -544,8 +543,6 @@ def _timetable_cards(enrolled):
 
 # ── 메인 라우트 ────────────────────────────────────────────────
 
-# 로그인 중간 단계 저장 (uid → 입력된 학번, 비번 대기)
-_kakao_pending: Dict[str, str] = {}  # uid → sid (비밀번호 대기 중)
 
 # 발화 정규화 맵 (전역)
 _UTT_MAP = {
@@ -572,7 +569,17 @@ _UTT_MAP = {
 }
 
 
-utt = _UTT_MAP.get(utt, utt)
+@app.route("/kakao", methods=["POST"])
+def kakao_skill():
+    d   = request.get_json(force=True)
+    utt_raw = d.get("userRequest",{}).get("utterance","").strip()
+    uid = d.get("userRequest",{}).get("user",{}).get("id","")
+
+    # 발화 정규화 (전역 적용)
+    utt = _UTT_MAP.get(utt_raw, utt_raw)
+
+    sid      = _kakao_users.get(uid)
+    is_admin = _kakao_admin.get(uid, False)
 
     # ── 로그인 완료 상태 ───────────────────────────────────────
     # 메뉴
