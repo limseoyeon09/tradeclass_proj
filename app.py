@@ -476,27 +476,6 @@ _kakao_users: Dict[str, str] = {}   # uid → sid
 _kakao_admin: Dict[str, bool] = {}  # uid → is_admin
 
 
-def _do_ksain_login(uid, sid, pw):
-    """가온누리 인증 후 로그인 처리"""
-    ok, verified_sid, name, err = ksain_verify(sid, pw)
-    if ok:
-        _kakao_users[uid] = verified_sid
-        _kakao_pending.pop(uid, None)
-        # name이 없으면 data.json에서 가져오기
-        if not name:
-            name = STUDENTS.get(verified_sid, {}).get("name", verified_sid)
-        return _kt(
-            f"✅ 로그인 성공!\n{name}님 환영해요 👋\n\n무엇을 도와드릴까요?",
-            _menu()
-        )
-    else:
-        _kakao_pending.pop(uid, None)
-        return _kt(
-            f"❌ 인증 실패\n{err}\n\n학번을 다시 입력해주세요.",
-            [_kb("🔄 다시 시도", "처음으로")]
-        )
-
-
 # ── 응답 헬퍼 ──────────────────────────────────────────────────
 
 def _kt(msg, btns=None):
@@ -518,7 +497,6 @@ def _menu():
     return [_kb("📅 내 시간표"), _kb("🔀 트레이드 신청"),
             _kb("📊 결과 확인"), _kb("📞 선생님 연락망"),
             _kb("🏫 형설관 공실","공실조회"),
-            _kb("🔄 다른 학번","로그아웃")]
 
 def _admin_menu():
     return [_kb("📋 신청 현황"), _kb("▶ 매칭 실행"),
@@ -591,67 +569,10 @@ _UTT_MAP = {
     "🔭 물리지구과학부": "물리지구과학부",
     "📚 인문예술학부": "인문예술학부",
     "🧪 화학생물학부": "화학생물학부",
-    "✅ 확인": "로그인확인",
-    "🔄 다른 학번": "로그아웃",
 }
 
 
-@app.route("/kakao", methods=["POST"])
-def kakao_skill():
-    d   = request.get_json(force=True)
-    utt_raw = d.get("userRequest",{}).get("utterance","").strip()
-    uid = d.get("userRequest",{}).get("user",{}).get("id","")
-
-    # 발화 정규화 (전역 적용)
-    utt = _UTT_MAP.get(utt_raw, utt_raw)
-
-    sid      = _kakao_users.get(uid)
-    is_admin = _kakao_admin.get(uid, False)
-
-    # ── 로그아웃 (다른 학번으로 전환) ─────────────────────────
-    if utt == "로그아웃":
-        _kakao_users.pop(uid, None)
-        _kakao_admin.pop(uid, None)
-        _kakao_pending.pop(uid, None)
-        return _kt("로그아웃 됐습니다.\n다른 학번으로 로그인하려면 학번을 입력하세요.",
-                   [_kb("🔄 다시 시작", "처음으로")])
-
-    # ── 학번 미등록 → 학번 입력 단계 ─────────────────────────
-    if not sid:
-        # 비밀번호 대기 중인 경우
-        pending_sid = _kakao_pending.get(uid)
-        if pending_sid:
-            # 이 입력이 비밀번호
-            pw = utt_raw  # 비밀번호는 정규화 없이 원본 사용
-            if pw in ["취소", "처음으로", "로그아웃"]:
-                _kakao_pending.pop(uid, None)
-                return _kt("로그인이 취소됐습니다.\n학번을 다시 입력해주세요.")
-            # 관리자 비밀번호 체크
-            if pw == ADMIN_PW:
-                s = STUDENTS.get(pending_sid, {})
-                name = s.get("name", "관리자")
-                _kakao_users[uid] = pending_sid
-                _kakao_admin[uid] = True
-                _kakao_pending.pop(uid, None)
-                return _kt(f"🛠 관리자로 로그인됐습니다.\n{name}님 환영해요!",
-                           _admin_menu() + [_kb("🏠 학생 메뉴", "메뉴_학생")])
-            # 가온누리 인증
-            return _kt("🔐 인증 중...", None) if False else _do_ksain_login(uid, pending_sid, pw)
-
-        # 학번 형식 입력
-        m = re.match(r"^(\d{2})-?(\d{3})$", utt_raw)
-        if m:
-            new_sid = f"{m.group(1)}-{m.group(2)}"
-            if new_sid not in STUDENTS:
-                return _kt(f"❌ {new_sid}은 등록되지 않은 학번이에요.\n다시 입력해주세요.\n예) 25-096")
-            name = STUDENTS[new_sid]["name"]
-            _kakao_pending[uid] = new_sid
-            return _kt(
-                f"🔐 {new_sid} ({name})\n\n가온누리 비밀번호를 입력해주세요.\n"
-                f"(비밀번호는 서버에 저장되지 않습니다)",
-                [_kb("❌ 취소", "취소")]
-            )
-        return _kt("안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096")
+utt = _UTT_MAP.get(utt, utt)
 
     # ── 로그인 완료 상태 ───────────────────────────────────────
     # 메뉴
