@@ -354,7 +354,7 @@ def _tt_cards(sid):
     day_order = ([today]+[d for d in DAYS if d!=today]) if today in DAYS else DAYS
     cards = []
     for d in day_order:
-        lines = [f"{p}교시: {sc.get((d,p),'공강')}" for p in range(1,10)]
+        lines = [f"{p}교시: {sc.get((d,p),'공강')}" for p in range(1,13)]
         label = f"{'오늘 ' if d==today else ''}{d}요일"
         cards.append({"title":f"📅 {label}","description":"\n".join(lines)})
     course_lines = []
@@ -578,7 +578,7 @@ def kakao_skill():
         return _kt(f"❌ {osid}은 등록되지 않은 학번이에요.", [_kb("🏠 메뉴로","메뉴")])
 
     # ── 트레이드 신청 ────────────────────────────────────────
-    if utt in ["트레이드 신청","신청"]:
+    if utt in ["트레이드 신청","신청"] or utt.startswith("과목목록 "):
         if not is_period_open():
             return _kt("⚠️ 현재 트레이드 신청 기간이 아닙니다.", [_kb("🏠 메뉴로","메뉴")])
         enrolled, _ = get_timetable(sid)
@@ -586,20 +586,60 @@ def kakao_skill():
                      if e["ck"] in COURSES and len(COURSES[e["ck"]]["sections"])>=2]
         if not tradeable:
             return _kt("트레이드 가능한 과목이 없어요.", [_kb("🏠 메뉴로","메뉴")])
+        # 페이지네이션
+        page = int(utt.split(" ")[1]) if utt.startswith("과목목록 ") else 0
+        PAGE = 4
+        page_t = tradeable[page*PAGE:(page+1)*PAGE]
         existing = _trade_requests.get(sid,[])
-        lines = ["🔀 트레이드 신청\n신청할 과목을 선택하세요:\n"]
+        lines = [f"🔀 트레이드 신청 ({page*PAGE+1}~{min((page+1)*PAGE,len(tradeable))}/{len(tradeable)}개)\n"]
+        lines.append("버튼으로 선택하거나 과목명을 직접 입력하세요.\n")
         btns = []
-        for e in tradeable:
+        for e in tradeable:  # 전체 목록 텍스트로 표시
             req = next((r for r in existing if r["course_key"]==e["ck"]),None)
             mark = " ✅" if req else ""
             lines.append(f"• {e['course']} ({e['section']}분반){mark}")
+        lines.append("")
+        for e in page_t:    # 현재 페이지 버튼
+            req = next((r for r in existing if r["course_key"]==e["ck"]),None)
+            mark = " ✅" if req else ""
             btns.append(_kb((e['course']+mark)[:14],
                            f"과목선택 {e['ck']} {e['section']}"))
+        shown = (page+1)*PAGE
+        if shown < len(tradeable):
+            btns.append(_kb(f"▶ 다음({shown}/{len(tradeable)})",f"과목목록 {page+1}"))
+        if page > 0:
+            btns.append(_kb("◀ 이전", f"과목목록 {page-1}"))
         if existing:
-            btns += [_kb("📤 신청 제출","신청제출"),
-                     _kb("❌ 신청 취소","신청취소")]
+            btns.append(_kb("📤 신청 제출","신청제출"))
         btns.append(_kb("🏠 메뉴로","메뉴"))
         return _kt("\n".join(lines), btns[:6])
+
+    # 과목명 직접 타이핑해서 신청
+    if not utt.startswith(("과목선택","분반선택","지망확정","과목목록","이동","신청","검색","관리자")):
+        # 수강 중인 과목명과 매칭 시도
+        enrolled, _ = get_timetable(sid)
+        tradeable = [e for e in enrolled
+                     if e["ck"] in COURSES and len(COURSES[e["ck"]]["sections"])>=2]
+        matched = [e for e in tradeable if utt in e['course'] or e['course'] in utt]
+        if matched and is_period_open():
+            e = matched[0]
+            ck, my_sec = e['ck'], e['section']
+            cn = ck.split("(")[0]
+            info = COURSES.get(ck,{})
+            all_s = [s for s in sorted(info.get("sections",{}).keys(),key=lambda x:int(x))
+                     if s!=my_sec]
+            PAGE = 4
+            btns = []
+            for sec in all_s[:PAGE]:
+                sl = info.get("slots",{}).get(sec,[])
+                sl_str = " ".join(f"{s_['d']}{s_['p']}교시" for s_ in sl[:2])
+                btns.append(_kb(f"{sec}분반({sl_str})"[:14],
+                               f"분반선택 {ck} {my_sec} {sec}"))
+            if len(all_s)>PAGE:
+                btns.append(_kb(f"▶ 다음({PAGE}/{len(all_s)})",
+                               f"과목선택 {ck} {my_sec} 1"))
+            btns.append(_kb("↩️ 돌아가기","트레이드 신청"))
+            return _kt(f"📚 {cn} (현재 {my_sec}분반)\n이동할 분반을 선택하세요:", btns[:6])
 
     # 과목 선택 (페이지네이션)
     if utt.startswith("과목선택 "):
@@ -779,25 +819,42 @@ def kakao_skill():
                     _kb("🧪 화학생물학부","화학생물학부"),
                     _kb("🏠 메뉴로","메뉴")])
 
-    if utt in ["수리정보과학부","물리지구과학부","인문예술학부","화학생물학부"]:
-        profs = [p for p in PROFESSORS if p["dept"]==utt]
+    if utt in ["수리정보과학부","물리지구과학부","인문예술학부","화학생물학부"]             or utt.startswith("학부상세 "):
+        # 학부 또는 특정 영역 표시
+        if utt.startswith("학부상세 "):
+            parts = utt.split(" ", 2)
+            dept_name = parts[1]
+            area_filter = parts[2] if len(parts)>2 else None
+        else:
+            dept_name = utt
+            area_filter = None
+        profs = [p for p in PROFESSORS if p["dept"]==dept_name]
         by_area = defaultdict(list)
         for p in profs: by_area[p["area"]].append(p)
         cards = []
+        MAX_PER_CARD = 5  # 카드당 최대 5명 (카카오 글자 제한 대비)
         for area, members in by_area.items():
+            if area_filter and area != area_filter:
+                continue
             emoji = members[0].get("area_emoji","") if members else ""
-            desc  = []
-            for p in members:
-                entry = f"• {p.get('name','?')}"
-                if p.get("office"): entry += f" ({p['office']})"
-                if p.get("email"):  entry += f"\n  ✉️ {p['email']}"
-                if p.get("phone"):  entry += f"\n  📞 {p['phone']}"
-                desc.append(entry)
-            cards.append({"title":f"{emoji} {area} ({len(members)}명)",
-                          "description":"\n".join(desc)})
-        return _kc(cards, [_kb("🔍 이름 검색","이름검색"),
-                           _kb("↩️ 학부 목록","선생님 연락망"),
-                           _kb("🏠 메뉴로","메뉴")])
+            # 5명씩 카드 분할
+            for i in range(0, len(members), MAX_PER_CARD):
+                chunk = members[i:i+MAX_PER_CARD]
+                desc = []
+                for p in chunk:
+                    entry = f"• {p.get('name','?')}"
+                    if p.get("office"): entry += f" ({p['office']})"
+                    if p.get("email"):  entry += f"\n  ✉️ {p['email']}"
+                    if p.get("phone"):  entry += f"\n  📞 {p['phone']}"
+                    desc.append(entry)
+                total_cards = (len(members)+MAX_PER_CARD-1)//MAX_PER_CARD
+                page_info = f" {i//MAX_PER_CARD+1}/{total_cards}" if total_cards>1 else ""
+                cards.append({"title":f"{emoji} {area}{page_info} ({len(chunk)}명)",
+                              "description":"\n".join(desc)})
+        btns = [_kb("🔍 이름 검색","이름검색"),
+                _kb("↩️ 학부 목록","선생님 연락망"),
+                _kb("🏠 메뉴로","메뉴")]
+        return _kc(cards, btns)
 
     if utt=="이름검색":
         return _kt("🔍 선생님 이름 검색\n\n형식: 검색 홍길동\n성함 일부만 입력해도 됩니다.",
