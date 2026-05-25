@@ -615,7 +615,13 @@ def kakao_skill():
         return _kt("\n".join(lines), btns[:6])
 
     # 과목명 직접 타이핑해서 신청
-    if not utt.startswith(("과목선택","분반선택","지망확정","과목목록","이동","신청","검색","관리자")):
+    _RESERVED = ("과목선택","분반선택","지망확정","과목목록","이동과목","이동확정",
+                 "신청","검색","관리자","메뉴","홈","시작","처음으로","메인",
+                 "과목추가","분반이동","공실조회","로그아웃","취소","결과",
+                 "신청제출","신청취소","이름검색","수리정보","물리지구","인문예술","화학생물",
+                 "신청현황","매칭실행","기간열기","기간닫기","내 시간표","시간표",
+                 "트레이드","선생님","연락망","extra_yes","move_yes","학부상세")
+    if not any(utt.startswith(r) or utt==r for r in _RESERVED):
         # 수강 중인 과목명과 매칭 시도
         enrolled, _ = get_timetable(sid)
         tradeable = [e for e in enrolled
@@ -747,7 +753,8 @@ def kakao_skill():
         for t in my.get("failures",[]):
             cn = t["course_key"].split("(")[0]
             lines.append(f"❌ {cn}: 실패 — 교수님께 직접 문의하세요.")
-        btns = [_kb("🏠 메뉴로","메뉴")]
+        # 성공/실패 관계없이 현재 시간표 카드도 표시
+        btns = [_kb("📅 현재 시간표","내 시간표"), _kb("🏠 메뉴로","메뉴")]
         if my.get("failures"): btns.insert(0,_kb("📞 선생님 연락망"))
         return _kt("\n".join(lines), btns)
 
@@ -774,19 +781,31 @@ def kakao_skill():
         parts = utt.split(" ")
         if len(parts)<3: return _kt("오류", [_kb("🏠 메뉴로","메뉴")])
         ck, from_s = parts[1], parts[2]
+        page = int(parts[3]) if len(parts)>3 else 0
         cn   = ck.split("(")[0]
         info = COURSES.get(ck,{})
-        other_secs = [s_ for s_ in sorted(info.get("sections",{}).keys(),key=lambda x:int(x))
-                      if s_!=from_s]
+        all_s = [s_ for s_ in sorted(info.get("sections",{}).keys(),key=lambda x:int(x))
+                 if s_!=from_s]
+        PAGE = 4
+        page_s = all_s[page*PAGE:(page+1)*PAGE]
         btns = []
-        for sec in other_secs[:5]:
+        for sec in page_s:
             sl = info.get("slots",{}).get(sec,[])
             sl_str = " ".join(f"{s_['d']}{s_['p']}교시" for s_ in sl[:2])
             btns.append(_kb(f"{sec}분반({sl_str})"[:14],
                            f"이동확정 {ck} {from_s} {sec}"))
+        shown = (page+1)*PAGE
+        if shown < len(all_s):
+            btns.append(_kb(f"▶ 다음({shown}/{len(all_s)})",
+                           f"이동과목 {ck} {from_s} {page+1}"))
+        if page>0:
+            btns.append(_kb("◀ 이전", f"이동과목 {ck} {from_s} {page-1}"))
         btns.append(_kb("↩️ 돌아가기","분반이동"))
-        return _kt(f"🔄 {cn} (현재 {from_s}분반)\n이동할 분반을 선택하세요.\n(선생님 허락을 받은 분반으로만 이동하세요)",
-                   btns)
+        return _kt(
+            f"🔄 {cn} (현재 {from_s}분반)\n"
+            f"분반 선택 ({page*PAGE+1}~{min(shown,len(all_s))}/{len(all_s)})\n"
+            f"(선생님 허락을 받은 분반으로만 이동하세요)",
+            btns[:6])
 
     if utt.startswith("이동확정 "):
         parts = utt.split(" ")
@@ -854,7 +873,8 @@ def kakao_skill():
         btns = [_kb("🔍 이름 검색","이름검색"),
                 _kb("↩️ 학부 목록","선생님 연락망"),
                 _kb("🏠 메뉴로","메뉴")]
-        return _kc(cards, btns)
+        # 카카오 캐러셀 최대 10장
+        return _kc(cards[:10], btns)
 
     if utt=="이름검색":
         return _kt("🔍 선생님 이름 검색\n\n형식: 검색 홍길동\n성함 일부만 입력해도 됩니다.",
@@ -877,30 +897,64 @@ def kakao_skill():
 
     # ── 형설관 공실 ──────────────────────────────────────────
     if utt=="공실조회":
-        today  = ["월","화","수","목","금","토","일"][datetime.datetime.now().weekday()]
-        now_t  = datetime.datetime.now().hour*60+datetime.datetime.now().minute
-        period_starts = [(8,50),(9,50),(10,50),(11,50),(13,40),(14,40),(15,40),(16,40),(17,40)]
-        cur_p  = next((i+1 for i,(h,m) in enumerate(period_starts)
-                       if h*60+m<=now_t<=h*60+m+50), None)
+        now    = datetime.datetime.now()
+        today  = ["월","화","수","목","금","토","일"][now.weekday()]
+        now_t  = now.hour*60+now.minute
         if today not in ["월","화","수","목","금"]:
-            return _kt("오늘은 주말이라 수업이 없어요 😊", [_kb("🏠 메뉴로","메뉴")])
+            return _kt("오늘은 주말이라 수업이 없어요 😊\n형설관 강의실 모두 사용 가능합니다.", [_kb("🏠 메뉴로","메뉴")])
         hyung = sorted(r for r in CLASSROOMS if r.startswith("형"))
-        if cur_p:
+        # 1학년 자습 전용 강의실 (평일 07:30~09:30)
+        STUDY_ROOMS = {"형3206","형3207","형3302","형3303","형3304",
+                       "형3305","형3306","형3307","형3402","형3404","형3405"}
+        is_study_time = (7*60+30 <= now_t <= 9*60+30)
+        # 교시 계산: 교시 시작~종료 (50분 수업)
+        # 1교시 08:50, 2교시 09:50, ..., 4교시 11:50, (점심), 5교시 13:40...
+        period_starts = [(8,50),(9,50),(10,50),(11,50),(13,40),(14,40),(15,40),(16,40),(17,40),(18,40),(19,30),(20,20)]
+        cur_p = None
+        for i,(h,m) in enumerate(period_starts):
+            t_start = h*60+m
+            t_end   = t_start+50
+            if t_start <= now_t <= t_end:
+                cur_p = i+1
+                break
+        # 일과 외 (18:40 이후 or 08:50 이전)
+        day_end   = 18*60+40   # 9교시 시작
+        day_start = 8*60+50    # 1교시 시작
+        after_school = now_t > day_end + 50  # 9교시 종료(19:30) 이후
+        before_school = now_t < day_start
+        if after_school or before_school:
+            lines = [f"🏫 형설관 강의실 현황 ({today}요일 {'일과 전' if before_school else '일과 후'})\n"]
+            lines.append("현재 수업이 없습니다. 모든 강의실 사용 가능합니다.\n")
+            if is_study_time:
+                lines.append("⚠️ 07:30~09:30 1학년 자습시간\n아래 강의실은 사용 불가:")
+                for r in sorted(STUDY_ROOMS): lines.append(f"  • {r}")
+                lines.append("\n아래 강의실은 사용 가능:")
+                avail = [r for r in hyung if r not in STUDY_ROOMS]
+                for r in avail: lines.append(f"  • {r}")
+            else:
+                for r in hyung: lines.append(f"  • {r}")
+        elif cur_p:
             sk  = f"{today}{cur_p}"
             vac = [r for r in hyung if sk not in CLASSROOMS.get(r,{})]
             occ = [r for r in hyung if sk in CLASSROOMS.get(r,{})]
-            lines = [f"🏫 형설관 공실 ({today}요일 {cur_p}교시)\n",
-                     f"✅ 빈 강의실 ({len(vac)}개):"]
-            lines += [f"  • {r}" for r in vac]
+            # 자습시간 중이면 자습 전용실 제외
+            if is_study_time:
+                vac = [r for r in vac if r not in STUDY_ROOMS]
+            lines = [f"🏫 형설관 공실 ({today}요일 {cur_p}교시)\n"]
+            if is_study_time:
+                lines.append("⚠️ 자습시간: 1학년 전용 강의실 제외\n")
+            lines.append(f"✅ 빈 강의실 ({len(vac)}개):")
+            for r in vac: lines.append(f"  • {r}")
             if occ:
                 lines.append(f"\n❌ 사용 중 ({len(occ)}개):")
-                for r in occ[:5]:
-                    lines.append(f"  • {r}: {CLASSROOMS[r].get(sk,'')[:12]}")
+                for r in occ[:6]: lines.append(f"  • {r}: {CLASSROOMS[r].get(sk,'')[:12]}")
+                if len(occ)>6: lines.append(f"  ... 외 {len(occ)-6}개")
         else:
-            lines = [f"🏫 형설관 ({today}요일) — 쉬는 시간\n"]
+            # 쉬는 시간
+            lines = [f"🏫 형설관 ({today}요일) — 쉬는 시간\n다음 교시 시간표:\n"]
             for r in hyung:
-                tc = [k for k in CLASSROOMS.get(r,{}) if k.startswith(today)]
-                lines.append(f"• {r}: {' '.join(k[1:]+'교시' for k in sorted(tc)) if tc else '공실'}")
+                tc = sorted([k for k in CLASSROOMS.get(r,{}) if k.startswith(today)])
+                lines.append(f"• {r}: {' '.join(k[1:]+'교시' for k in tc) if tc else '공실'}")
         return _kt("\n".join(lines), [_kb("🔄 새로고침","공실조회"), _kb("🏠 메뉴로","메뉴")])
 
     # ── 관리자 전용 ──────────────────────────────────────────
