@@ -170,6 +170,39 @@ def build_result(reqs, chosen, cycles):
     return {"total_success":len(chosen),"total_requests":len(reqs),
             "students":list(per.values()),"cycles":cycles}
 
+
+def apply_match_to_timetable(result: dict):
+    """
+    매칭 결과를 _approved_moves에 자동 반영.
+    성공한 트레이드를 시간표에 즉시 적용.
+    """
+    for student in result.get("students", []):
+        sid = student["sid"]
+        for t in student.get("successes", []):
+            ck     = t["course_key"]
+            to_sec = t["to"]
+            info   = COURSES.get(ck, {})
+            new_slots = info.get("slots", {}).get(to_sec, [])
+            # 강의실 찾기
+            new_room = ""
+            if new_slots:
+                cn = ck.split("(")[0]
+                sk = f"{new_slots[0]['d']}{new_slots[0]['p']}"
+                for room, sched in CLASSROOMS.items():
+                    v = sched.get(sk, "")
+                    if cn in v and f"_{to_sec}" in v:
+                        new_room = room; break
+            entry = {
+                "ck":         ck,
+                "new_section": to_sec,
+                "new_slots":  new_slots,
+                "new_room":   new_room,
+            }
+            _approved_moves.setdefault(sid, [])
+            # 기존 같은 과목 이동 내역 덮어쓰기
+            _approved_moves[sid] = [m for m in _approved_moves[sid] if m["ck"] != ck]
+            _approved_moves[sid].append(entry)
+
 # ═══════════════════════════════════════════════════════════
 # 웹 API 라우트
 # ═══════════════════════════════════════════════════════════
@@ -261,6 +294,7 @@ def api_run_match():
         chosen,cycles=solve(all_reqs,em)
         result=build_result(all_reqs,chosen,cycles)
         _last_match.clear(); _last_match.update(result)
+        apply_match_to_timetable(result)   # 시간표 자동 반영
         return jsonify({"ok":True,"result":_last_match})
     except Exception as e:
         import traceback
@@ -1061,6 +1095,7 @@ def kakao_skill():
             chosen,cycles = solve(all_reqs,em)
             result = build_result(all_reqs,chosen,cycles)
             _last_match.clear(); _last_match.update(result)
+            apply_match_to_timetable(result)   # 시간표 자동 반영
             ts,tr = result["total_success"],result["total_requests"]
             pct   = round(ts/tr*100) if tr else 0
             return _kt(f"✅ 매칭 완료!\n{ts}/{tr}건 성사 ({pct}%)\n순환 그룹: {len(result['cycles'])}개",
