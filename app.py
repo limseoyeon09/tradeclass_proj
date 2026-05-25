@@ -376,6 +376,14 @@ def kakao_skill():
     step    = _kakao_step.get(uid, {})
     is_admin= _kakao_admin.get(uid, False)
 
+    # ── 카카오 시스템 메시지 무시 ───────────────────────────
+    # 채널 추가/차단 등 시스템 발화는 무시
+    if any(kw in utt_raw for kw in ["채널을 추가", "채널 추가", "채널을 차단", "대화 상대를 차단"]):
+        if not sid:
+            return _kt("안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096")
+        name = _get_name(sid)
+        return _kt(f"{name}님, 무엇을 도와드릴까요?", _menu())
+
     # ── 로그아웃 ────────────────────────────────────────────
     if utt == "로그아웃":
         for d_ in [_kakao_users,_kakao_admin,_kakao_step]:
@@ -455,7 +463,8 @@ def kakao_skill():
             return _kt(f"🔐 {nsid} ({_get_name(nsid)})\n\n본인 확인을 위해\n이름을 입력해주세요.",
                        [_kb("❌ 취소","취소")])
 
-        return _kt("안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096")
+        # 학번 형식이 아닌 모든 입력 → 안내
+        return _kt("안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096\n\n※ 숫자-숫자 형식으로 입력해주세요.")
 
     # ── 로그인 완료 ─────────────────────────────────────────
     name = _get_name(sid)
@@ -879,7 +888,9 @@ def kakao_skill():
             return _kt(f"⚠️ 오류: {str(e)[:80]}", _admin_menu())
 
     # ── 폴백 ────────────────────────────────────────────────
-    return _kt("죄송해요, 잘 이해하지 못했어요 😅\n아래 메뉴에서 선택해주세요.", _menu())
+    # 알 수 없는 입력 → 현재 단계 초기화 후 메뉴 표시
+    _kakao_step.pop(uid, None)
+    return _kt(f"{name}님, 아래 메뉴에서 선택해주세요.", _menu())
 
 
 # ═══════════════════════════════════════════════════════════
