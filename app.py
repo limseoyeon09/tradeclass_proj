@@ -117,7 +117,9 @@ def solve(reqs, enrolled_map):
     def ok(c):
         to_sl = COURSES.get(c.ck,{}).get("slots",{}).get(c.to,[])
         if not to_sl: return True
-        other = [sl for e in enrolled_map.get(c.sid,[])
+        # 실시간 시간표로 충돌 체크 (분반이동/추가과목 반영됨)
+        live_enrolled, _ = get_timetable(c.sid)
+        other = [sl for e in live_enrolled
                  if e.get("ck","")!=c.ck for sl in e.get("slots",[])]
         return not _conflict(to_sl, other)
     def bt(idx, ch, st):
@@ -295,18 +297,45 @@ def api_clear():
 
 # 발화 정규화 맵
 _UTT_MAP = {
-    "📅 내 시간표":"내 시간표", "🔀 트레이드 신청":"트레이드 신청",
-    "📊 결과 확인":"결과 확인", "📞 선생님 연락망":"선생님 연락망",
-    "🏫 형설관 공실":"공실조회", "🏠 메뉴로":"메뉴",
+    # 시간표
+    "📅 내 시간표":"내 시간표", "내 시간표 보기":"내 시간표",
+    # 트레이드
+    "🔀 트레이드 신청":"트레이드 신청", "트레이드":"트레이드 신청",
+    # 결과
+    "📊 결과 확인":"결과 확인",
+    # 선생님
+    "📞 선생님 연락망":"선생님 연락망", "선생님 연락처":"선생님 연락망",
+    "교사 연락망":"선생님 연락망", "연락처":"선생님 연락망",
+    # 공실
+    "🏫 형설관 공실":"공실조회", "형설관 공실":"공실조회",
+    "공실 조회":"공실조회", "형설관":"공실조회",
+    # 메뉴
+    "🏠 메뉴로":"메뉴", "🏠 학생 메뉴":"메뉴", "메인 메뉴":"메뉴",
+    # 과목추가
+    "➕ 과목 추가":"과목추가", "과목 추가":"과목추가",
+    "교과목 추가 신청":"과목추가", "과목 추가 신청":"과목추가",
+    "교과목 추가":"과목추가", "수강 추가":"과목추가",
+    # 분반이동
+    "🔄 분반 이동":"분반이동", "분반 이동":"분반이동",
+    "분반이동 신청":"분반이동", "분반 변경":"분반이동",
+    # 기타
     "↩️ 학부 목록":"선생님 연락망", "↩️ 돌아가기":"트레이드 신청",
-    "🔄 새로고침":"공실조회", "📋 신청 현황":"신청현황",
-    "▶ 매칭 실행":"매칭실행", "🟢 기간 열기":"기간열기",
-    "🔴 기간 닫기":"기간닫기", "🔍 이름 검색":"이름검색",
-    "🔍 다시 검색":"이름검색", "🔀 다른 과목 추가":"트레이드 신청",
-    "🏛 수리정보과학부":"수리정보과학부", "🔭 물리지구과학부":"물리지구과학부",
-    "📚 인문예술학부":"인문예술학부", "🧪 화학생물학부":"화학생물학부",
-    "➕ 과목 추가":"과목추가", "🔄 분반 이동":"분반이동",
-    "🔄 다른 학번":"로그아웃", "🏠 학생 메뉴":"메뉴", "❌ 취소":"취소",
+    "🔄 새로고침":"공실조회",
+    "📋 신청 현황":"신청현황", "신청 현황":"신청현황",
+    "▶ 매칭 실행":"매칭실행", "매칭 실행":"매칭실행",
+    "🟢 기간 열기":"기간열기", "기간 열기":"기간열기",
+    "🔴 기간 닫기":"기간닫기", "기간 닫기":"기간닫기",
+    "🔍 이름 검색":"이름검색", "🔍 다시 검색":"이름검색",
+    "이름 검색":"이름검색", "선생님 검색":"이름검색",
+    "🔀 다른 과목 추가":"트레이드 신청",
+    "🏛 수리정보과학부":"수리정보과학부",
+    "🔭 물리지구과학부":"물리지구과학부",
+    "📚 인문예술학부":"인문예술학부",
+    "🧪 화학생물학부":"화학생물학부",
+    "🔄 다른 학번":"로그아웃", "다른 학번":"로그아웃",
+    "로그아웃":"로그아웃", "❌ 취소":"취소",
+    # 결과 후 시간표
+    "📅 현재 시간표":"내 시간표",
 }
 
 
@@ -502,6 +531,11 @@ def kakao_skill():
         _extra_courses.setdefault(sid,[])
         _extra_courses[sid] = [e for e in _extra_courses[sid] if e["ck"]!=ck]
         _extra_courses[sid].append(entry)
+        # 트레이드 신청의 enrolled도 갱신
+        if sid in _trade_requests:
+            live_enrolled, _ = get_timetable(sid)
+            for r in _trade_requests[sid]:
+                r["enrolled"] = live_enrolled
         _kakao_step.pop(uid,None)
         return _kt(f"✅ {cname} {sec}분반이 시간표에 추가됐어요!",
                    [_kb("📅 내 시간표","내 시간표"), _kb("🏠 메뉴로","메뉴")])
@@ -620,7 +654,7 @@ def kakao_skill():
                  "과목추가","분반이동","공실조회","로그아웃","취소","결과",
                  "신청제출","신청취소","이름검색","수리정보","물리지구","인문예술","화학생물",
                  "신청현황","매칭실행","기간열기","기간닫기","내 시간표","시간표",
-                 "트레이드","선생님","연락망","extra_yes","move_yes","학부상세")
+                 "트레이드","선생님","연락망","extra_yes","move_yes","학부상세","영역보기")
     if not any(utt.startswith(r) or utt==r for r in _RESERVED):
         # 수강 중인 과목명과 매칭 시도
         enrolled, _ = get_timetable(sid)
@@ -752,8 +786,23 @@ def kakao_skill():
             lines.append(f"✅ {cn}: {t['from']}분반 → {t['to']}분반 성공!")
         for t in my.get("failures",[]):
             cn = t["course_key"].split("(")[0]
-            lines.append(f"❌ {cn}: 실패 — 교수님께 직접 문의하세요.")
-        # 성공/실패 관계없이 현재 시간표 카드도 표시
+            # 충돌 여부 확인
+            to_list = t.get("to_list",[])
+            enrolled_now, _ = get_timetable(sid)
+            conflict_info = ""
+            for to_sec in to_list:
+                to_slots = COURSES.get(t["course_key"],{}).get("slots",{}).get(to_sec,[])
+                for sl in to_slots:
+                    conflict = next((e for e in enrolled_now
+                                     if e["ck"]!=t["course_key"]
+                                     and any(s["d"]==sl["d"] and s["p"]==sl["p"]
+                                             for s in e.get("slots",[]))), None)
+                    if conflict:
+                        conflict_info = f"\n   ⚠️ {to_sec}분반 → {conflict['course']}({sl['d']}{sl['p']}교시)와 시간 충돌"
+                        break
+            lines.append(f"❌ {cn}: {t['from']}분반 → 실패{conflict_info}")
+            if not conflict_info:
+                lines.append(f"   교수님께 직접 분반 변경을 문의하세요.")
         btns = [_kb("📅 현재 시간표","내 시간표"), _kb("🏠 메뉴로","메뉴")]
         if my.get("failures"): btns.insert(0,_kb("📞 선생님 연락망"))
         return _kt("\n".join(lines), btns)
@@ -825,6 +874,11 @@ def kakao_skill():
         _approved_moves.setdefault(sid,[])
         _approved_moves[sid] = [m for m in _approved_moves[sid] if m["ck"]!=ck]
         _approved_moves[sid].append(entry)
+        # 트레이드 신청의 enrolled도 갱신 (기존 신청이 있으면)
+        if sid in _trade_requests:
+            live_enrolled, _ = get_timetable(sid)
+            for r in _trade_requests[sid]:
+                r["enrolled"] = live_enrolled
         sl_str = " ".join(f"{s_['d']}{s_['p']}교시" for s_ in new_slots[:2])
         return _kt(f"✅ {cn} 분반이동 완료!\n{from_s}분반 → {to_s}분반\n{sl_str}",
                    [_kb("📅 내 시간표","내 시간표"), _kb("🏠 메뉴로","메뉴")])
@@ -838,43 +892,54 @@ def kakao_skill():
                     _kb("🧪 화학생물학부","화학생물학부"),
                     _kb("🏠 메뉴로","메뉴")])
 
-    if utt in ["수리정보과학부","물리지구과학부","인문예술학부","화학생물학부"]             or utt.startswith("학부상세 "):
-        # 학부 또는 특정 영역 표시
-        if utt.startswith("학부상세 "):
-            parts = utt.split(" ", 2)
-            dept_name = parts[1]
+    if utt in ["수리정보과학부","물리지구과학부","인문예술학부","화학생물학부"] \
+            or utt.startswith("학부상세 ") or utt.startswith("영역보기 "):
+        if utt.startswith("학부상세 ") or utt.startswith("영역보기 "):
+            parts       = utt.split(" ")
+            dept_name   = parts[1]
             area_filter = parts[2] if len(parts)>2 else None
+            area_page   = int(parts[3]) if len(parts)>3 else 0
         else:
-            dept_name = utt
+            dept_name   = utt
             area_filter = None
-        profs = [p for p in PROFESSORS if p["dept"]==dept_name]
+            area_page   = 0
+        profs   = [p for p in PROFESSORS if p["dept"]==dept_name]
         by_area = defaultdict(list)
         for p in profs: by_area[p["area"]].append(p)
+        if not area_filter:
+            # 영역 버튼 목록
+            lines_ = [f"📞 {dept_name}\n\n영역(과)를 선택하세요:"]
+            area_btns = []
+            for area, members in by_area.items():
+                emoji = members[0].get("area_emoji","") if members else ""
+                lines_.append(f"  {emoji} {area} ({len(members)}명)")
+                area_btns.append(_kb(f"{emoji} {area}"[:14], f"영역보기 {dept_name} {area}"))
+            area_btns += [_kb("🔍 이름 검색","이름검색"), _kb("🏠 메뉴로","메뉴")]
+            return _kt("\n".join(lines_), area_btns[:6])
+        # 1명 1카드
+        members = by_area.get(area_filter, [])
+        if not members:
+            return _kt(f"{area_filter} 선생님 정보가 없어요.",
+                       [_kb(f"↩️ 목록", f"학부상세 {dept_name}"), _kb("🏠 메뉴로","메뉴")])
+        PAGE  = 10
+        chunk = members[area_page*PAGE:(area_page+1)*PAGE]
         cards = []
-        MAX_PER_CARD = 5  # 카드당 최대 5명 (카카오 글자 제한 대비)
-        for area, members in by_area.items():
-            if area_filter and area != area_filter:
-                continue
-            emoji = members[0].get("area_emoji","") if members else ""
-            # 5명씩 카드 분할
-            for i in range(0, len(members), MAX_PER_CARD):
-                chunk = members[i:i+MAX_PER_CARD]
-                desc = []
-                for p in chunk:
-                    entry = f"• {p.get('name','?')}"
-                    if p.get("office"): entry += f" ({p['office']})"
-                    if p.get("email"):  entry += f"\n  ✉️ {p['email']}"
-                    if p.get("phone"):  entry += f"\n  📞 {p['phone']}"
-                    desc.append(entry)
-                total_cards = (len(members)+MAX_PER_CARD-1)//MAX_PER_CARD
-                page_info = f" {i//MAX_PER_CARD+1}/{total_cards}" if total_cards>1 else ""
-                cards.append({"title":f"{emoji} {area}{page_info} ({len(chunk)}명)",
-                              "description":"\n".join(desc)})
-        btns = [_kb("🔍 이름 검색","이름검색"),
-                _kb("↩️ 학부 목록","선생님 연락망"),
-                _kb("🏠 메뉴로","메뉴")]
-        # 카카오 캐러셀 최대 10장
-        return _kc(cards[:10], btns)
+        for p in chunk:
+            emoji = p.get("area_emoji","")
+            desc_lines = []
+            if p.get("office"): desc_lines.append(f"🏢 {p['office']}")
+            if p.get("email"):  desc_lines.append(f"✉️ {p['email']}")
+            if p.get("phone"):  desc_lines.append(f"📞 {p['phone']}")
+            cards.append({"title": f"{emoji} {p.get('name','?')}",
+                          "description": "\n".join(desc_lines) or "연락처 없음"})
+        nav = []
+        if (area_page+1)*PAGE < len(members):
+            nav.append(_kb(f"▶ 다음({(area_page+1)*PAGE}/{len(members)})",
+                           f"영역보기 {dept_name} {area_filter} {area_page+1}"))
+        if area_page > 0:
+            nav.append(_kb("◀ 이전", f"영역보기 {dept_name} {area_filter} {area_page-1}"))
+        nav += [_kb("↩️ 영역 목록", f"학부상세 {dept_name}"), _kb("🏠 메뉴로","메뉴")]
+        return _kc(cards, nav[:4])
 
     if utt=="이름검색":
         return _kt("🔍 선생님 이름 검색\n\n형식: 검색 홍길동\n성함 일부만 입력해도 됩니다.",
@@ -909,18 +974,23 @@ def kakao_skill():
         is_study_time = (7*60+30 <= now_t <= 9*60+30)
         # 교시 계산: 교시 시작~종료 (50분 수업)
         # 1교시 08:50, 2교시 09:50, ..., 4교시 11:50, (점심), 5교시 13:40...
-        period_starts = [(8,50),(9,50),(10,50),(11,50),(13,40),(14,40),(15,40),(16,40),(17,40),(18,40),(19,30),(20,20)]
+        # 교시 시작-종료 (50분 수업, 10분 쉬는시간)
+        # 1~4교시: 08:50~12:30, 점심 12:30~13:40, 5~9교시: 13:40~18:30
+        # 10~12교시: 자습/야간 수업 (학교마다 다름 → 기준 없음)
+        period_slots = [
+            (8,50,9,40),(9,50,10,40),(10,50,11,40),(11,50,12,40),
+            (13,40,14,30),(14,40,15,30),(15,40,16,30),(16,40,17,30),(17,40,18,30),
+        ]
         cur_p = None
-        for i,(h,m) in enumerate(period_starts):
-            t_start = h*60+m
-            t_end   = t_start+50
+        for i,(sh,sm,eh,em_) in enumerate(period_slots):
+            t_start = sh*60+sm
+            t_end   = eh*60+em_
             if t_start <= now_t <= t_end:
                 cur_p = i+1
                 break
-        # 일과 외 (18:40 이후 or 08:50 이전)
-        day_end   = 18*60+40   # 9교시 시작
-        day_start = 8*60+50    # 1교시 시작
-        after_school = now_t > day_end + 50  # 9교시 종료(19:30) 이후
+        day_start = 8*60+50
+        day_end   = 18*60+30  # 9교시 종료
+        after_school  = now_t > day_end
         before_school = now_t < day_start
         if after_school or before_school:
             lines = [f"🏫 형설관 강의실 현황 ({today}요일 {'일과 전' if before_school else '일과 후'})\n"]
