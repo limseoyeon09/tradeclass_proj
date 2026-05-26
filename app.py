@@ -678,6 +678,23 @@ _UTT_MAP = {
     "➕ Add Course":"과목추가",
     "🔄 Change Section":"분반이동",
     "🏠 Menu":"메뉴",
+    # 오픈빌더 Main menu (English) 블록 버튼들
+    "My Timetable":"내 시간표",
+    "Vacant Rooms":"공실조회",
+    "Contact T":"선생님 연락망",
+    "Contacts":"선생님 연락망",
+    "Request Trade":"트레이드 신청",
+    "Check Results":"결과 확인",
+    "Add Course":"과목추가",
+    "Move to class":"분반이동",
+    "Move to Class":"분반이동",
+    "View Timetable":"내 시간표",
+    "Guide vacant room":"공실조회",
+    "Faculty emails and info":"선생님 연락망",
+    "Trade classes with request":"트레이드 신청",
+    "Check results after a trade":"결과 확인",
+    "Add courses to your timetable":"과목추가",
+    "Add class section transfers":"분반이동",
 }
 
 
