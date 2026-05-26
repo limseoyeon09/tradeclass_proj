@@ -41,18 +41,18 @@ _kakao_lang:      Dict[str, str]  = {}  # uid → "ko" | "en"
 # ── 번역 딕셔너리 ──────────────────────────────────────────
 _T = {
     "ko": {
-        "welcome":       "안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096",
+        "welcome":       _t(uid,"welcome"),
         "enter_id":      "한과영 학번을 입력해주세요.\n예) 25-096",
         "enter_name":    "본인 확인을 위해 이름을 입력해주세요.",
-        "name_ok":       "✅ 이름 확인!\n처음 로그인이에요.\n\n사용할 4자리 PIN을 설정해주세요.",
-        "name_ok_exist": "✅ 이름 확인!\n\n4자리 PIN을 입력해주세요.",
-        "name_fail":     "❌ 이름이 일치하지 않아요.\n학번부터 다시 입력해주세요.",
-        "pin_set":       "숫자 4자리를 입력해주세요. (예: 1234)",
-        "pin_confirm":   "PIN을 한 번 더 입력해 확인할게요.",
-        "pin_mismatch":  "PIN이 일치하지 않아요.\n다시 4자리 PIN을 입력해주세요.",
+        "name_ok":       _t(uid,"name_ok"),
+        "name_ok_exist": _t(uid,"name_ok_exist"),
+        "name_fail":     _t(uid,"name_fail"),
+        "pin_set":       _t(uid,"pin_set"),
+        "pin_confirm":   _t(uid,"pin_confirm"),
+        "pin_mismatch":  _t(uid,"pin_mismatch"),
         "pin_ok":        "🔐 PIN 설정 완료!\n{name}님 환영해요 👋",
         "login_ok":      "✅ 로그인 성공!\n{name}님 환영해요 👋",
-        "pin_fail":      "❌ PIN이 틀렸어요.\n학번부터 다시 입력해주세요.",
+        "pin_fail":      _t(uid,"pin_fail"),
         "id_not_found":  "❌ {sid}은 등록되지 않은 학번이에요.\n다시 입력해주세요.",
         "menu_q":        "{name}님, 무엇을 도와드릴까요?",
         "logout_done":   "로그아웃 됐습니다.\n학번을 입력해 다시 로그인하세요.",
@@ -60,7 +60,7 @@ _T = {
         "period_closed": "⚠️ 현재 트레이드 신청 기간이 아닙니다.",
         "trade_cancelled":"신청이 취소됐습니다.",
         "no_match_yet":  "아직 매칭 결과가 없어요.",
-        "no_my_match":   "이번 매칭에 내 신청 내역이 없어요.",
+        "no_my_match":   _t(uid,"no_my_match"),
         "trade_result":  "📊 내 트레이드 결과\n",
         "success_line":  "✅ {cn}: {fr}분반 → {to}분반 성공!",
         "fail_line":     "❌ {cn}: {fr}분반 → 실패",
@@ -539,31 +539,55 @@ def _admin_menu():
         _kb("🏠 학생 메뉴","메뉴"),
     ]
 
-def _tt_cards(sid):
-    """시간표 캐러셀 카드 생성"""
+def _tt_cards(sid, uid=""):
+    """시간표 캐러셀 카드 생성 (uid로 언어 설정 반영)"""
     enrolled, _ = get_timetable(sid)
     if not enrolled: return []
-    DAYS = ['월','화','수','목','금']
-    today = ["월","화","수","목","금","토","일"][datetime.datetime.now().weekday()]
+    lang = _kakao_lang.get(uid, "ko")
+    DAYS_KO = ['월','화','수','목','금']
+    DAYS_EN = ['Mon','Tue','Wed','Thu','Fri']
+    DAYS    = DAYS_KO if lang == "ko" else DAYS_EN
+    DAYS_MAP = dict(zip(DAYS_KO, DAYS))  # 월→Mon 등
+    today_idx = datetime.datetime.now().weekday()
+    today_ko  = DAYS_KO[today_idx] if today_idx < 5 else None
+    today_loc = DAYS[today_idx]    if today_idx < 5 else None
+    free_word = _t(uid, "free")    # "공강" or "Free"
     sc = {}
     for e in enrolled:
         room = e.get('room','')
         for sl in e.get('slots',[]):
-            r = sl.get('r', room)
+            r   = sl.get('r', room)
             loc = f" ({r})" if r else ""
-            sc[(sl['d'],sl['p'])] = f"{e['course']}{loc}"
-    day_order = ([today]+[d for d in DAYS if d!=today]) if today in DAYS else DAYS
+            sc[(sl['d'], sl['p'])] = f"{e['course']}{loc}"
+    day_order_ko = ([today_ko]+[d for d in DAYS_KO if d!=today_ko]) if today_ko else DAYS_KO
     cards = []
-    for d in day_order:
-        lines = [f"{p}교시: {sc.get((d,p),'공강')}" for p in range(1,13)]
-        label = f"{'오늘 ' if d==today else ''}{d}요일"
-        cards.append({"title":f"📅 {label}","description":"\n".join(lines)})
+    for d_ko in day_order_ko:
+        d_loc = DAYS_MAP.get(d_ko, d_ko)
+        lines = []
+        for p in range(1, 13):
+            val = sc.get((d_ko, p), free_word)
+            if lang == "ko":
+                lines.append(f"{p}교시: {val}")
+            else:
+                lines.append(f"Period {p}: {val}")
+        is_today = (d_ko == today_ko)
+        if lang == "ko":
+            label = f"{'오늘 ' if is_today else ''}{d_ko}요일"
+            title = f"📅 {label}"
+        else:
+            label = f"{'Today ' if is_today else ''}{d_loc}"
+            title = f"📅 {label}"
+        cards.append({"title": title, "description": "\n".join(lines)})
     course_lines = []
     for e in enrolled:
         room = e.get('room','')
-        loc = f" ({room})" if room else ""
-        course_lines.append(f"• {e['course']} {e['section']}분반{loc}")
-    cards.append({"title":"📚 전체 수강 과목","description":"\n".join(course_lines)})
+        loc  = f" ({room})" if room else ""
+        if lang == "ko":
+            course_lines.append(f"• {e['course']} {e['section']}분반{loc}")
+        else:
+            course_lines.append(f"• {e['course']} Sec.{e['section']}{loc}")
+    title_all = "📚 전체 수강 과목" if lang == "ko" else "📚 All Courses"
+    cards.append({"title": title_all, "description": "\n".join(course_lines)})
     return cards
 
 
@@ -592,7 +616,7 @@ def kakao_skill():
     # 채널 추가/차단 등 시스템 발화는 무시
     if any(kw in utt_raw for kw in ["채널을 추가", "채널 추가", "채널을 차단", "대화 상대를 차단"]):
         if not sid:
-            return _kt("안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096")
+            return _kt(_t(uid,"welcome"))
         name = _get_name(sid)
         return _kt(f"{name}님, 무엇을 도와드릴까요?", _menu())
 
@@ -619,24 +643,24 @@ def kakao_skill():
             if _verify_name(psid, utt_raw):
                 if psid in _kakao_pins:
                     _kakao_step[uid] = {"s":"pin","sid":psid}
-                    return _kt("✅ 이름 확인!\n\n4자리 PIN을 입력해주세요.",
+                    return _kt(_t(uid,"name_ok_exist"),
                                [_kb("❌ 취소","취소")])
                 else:
                     _kakao_step[uid] = {"s":"pin_set","sid":psid}
-                    return _kt("✅ 이름 확인!\n처음 로그인이에요.\n\n사용할 4자리 PIN을 설정해주세요.",
+                    return _kt(_t(uid,"name_ok"),
                                [_kb("❌ 취소","취소")])
             else:
                 _kakao_step.pop(uid, None)
-                return _kt("❌ 이름이 일치하지 않아요.\n학번부터 다시 입력해주세요.")
+                return _kt(_t(uid,"name_fail"))
 
         # STEP 3a: PIN 설정
         if s == "pin_set":
             psid = step["sid"]
             if not utt_raw.isdigit() or len(utt_raw) != 4:
-                return _kt("숫자 4자리를 입력해주세요. (예: 1234)",
+                return _kt(_t(uid,"pin_set"),
                            [_kb("❌ 취소","취소")])
             _kakao_step[uid] = {"s":"pin_confirm","sid":psid,"pin":utt_raw}
-            return _kt("PIN을 한 번 더 입력해 확인할게요.",
+            return _kt(_t(uid,"pin_confirm"),
                        [_kb("❌ 취소","취소")])
 
         # STEP 3b: PIN 확인
@@ -649,7 +673,7 @@ def kakao_skill():
                 return _kt(_t(uid,"pin_ok",name=_get_name(psid)), _menu(uid))
             else:
                 _kakao_step[uid] = {"s":"pin_set","sid":psid}
-                return _kt("PIN이 일치하지 않아요.\n다시 4자리 PIN을 입력해주세요.",
+                return _kt(_t(uid,"pin_mismatch"),
                            [_kb("❌ 취소","취소")])
 
         # STEP 3c: PIN 입력 (기존 사용자)
@@ -661,7 +685,7 @@ def kakao_skill():
                 return _kt(_t(uid,"login_ok",name=_get_name(psid)), _menu(uid))
             else:
                 _kakao_step.pop(uid, None)
-                return _kt("❌ PIN이 틀렸어요.\n학번부터 다시 입력해주세요.")
+                return _kt(_t(uid,"pin_fail"))
 
         # STEP 1: 학번 입력
         m = re.match(r"^(\d{2})-?(\d{3})$", utt_raw)
@@ -674,7 +698,7 @@ def kakao_skill():
                        [_kb("❌ 취소","취소")])
 
         # 학번 형식이 아닌 모든 입력 → 안내
-        return _kt("안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096\n\n※ 숫자-숫자 형식으로 입력해주세요.")
+        return _kt(_t(uid,"welcome"))
 
     # ── 로그인 완료 ─────────────────────────────────────────
     name = _get_name(sid)
@@ -684,7 +708,7 @@ def kakao_skill():
     if s == "extra_input":
         parts = utt_raw.strip().rsplit(" ",1)
         if len(parts)<2 or not parts[1].isdigit():
-            return _kt("형식: 과목명 분반번호\n예) 미적분학 3",
+            return _kt("Format: [name] [section]\nEx) Calculus 3" if _kakao_lang.get(uid,"ko")=="en" else "형식: 과목명 분반번호\n예) 미적분학 3",
                        [_kb("❌ 취소","취소")])
         cname, sec = parts[0].strip(), parts[1].strip()
         matching = [(ck,info) for ck,info in COURSES.items()
@@ -771,13 +795,13 @@ def kakao_skill():
             period = "열림 ✅" if is_period_open() else "닫힘 ❌"
             return _kt(f"🛠 관리자 모드\n신청: {len(_trade_requests)}명 {total}건\n기간: {period}",
                        _admin_menu())
-        return _kt("❌ 비밀번호가 틀렸습니다.")
+        return _kt("❌ Incorrect password." if _kakao_lang.get(uid,"ko")=="en" else "❌ 비밀번호가 틀렸습니다.")
 
     # ── 내 시간표 ────────────────────────────────────────────
     if utt in ["내 시간표","시간표"]:
-        cards = _tt_cards(sid)
+        cards = _tt_cards(sid, uid)
         if not cards:
-            return _kt("시간표 정보가 없어요.", [_kb("🏠 메뉴로","메뉴")])
+            return _kt("No timetable found." if _kakao_lang.get(uid,"ko")=="en" else "시간표 정보가 없어요.", [_kb("🏠 메뉴로","메뉴")])
         return _kc(cards, [_kb("🔀 트레이드 신청"),
                            _kb("➕ 과목 추가","과목추가"),
                            _kb("🏠 메뉴로","메뉴")])
@@ -787,7 +811,7 @@ def kakao_skill():
     if m_o and ("시간표" in utt or "조회" in utt):
         osid = f"{m_o.group(1)}-{m_o.group(2)}"
         if osid in STUDENTS:
-            cards = _tt_cards(osid)
+            cards = _tt_cards(osid, uid)
             if cards: cards[0]["title"] = f"📅 {_get_name(osid)}({osid})"
             return _kc(cards, [_kb("🏠 메뉴로","메뉴")])
         return _kt(f"❌ {osid}은 등록되지 않은 학번이에요.", [_kb("🏠 메뉴로","메뉴")])
@@ -800,14 +824,18 @@ def kakao_skill():
         tradeable = [e for e in enrolled
                      if e["ck"] in COURSES and len(COURSES[e["ck"]]["sections"])>=2]
         if not tradeable:
-            return _kt("트레이드 가능한 과목이 없어요.", [_kb("🏠 메뉴로","메뉴")])
+            return _kt("No courses available for trade." if _kakao_lang.get(uid,"ko")=="en" else "트레이드 가능한 과목이 없어요.", [_kb("🏠 메뉴로","메뉴")])
         # 페이지네이션
         page = int(utt.split(" ")[1]) if utt.startswith("과목목록 ") else 0
         PAGE = 4
         page_t = tradeable[page*PAGE:(page+1)*PAGE]
         existing = _trade_requests.get(sid,[])
-        lines = [f"🔀 트레이드 신청 ({page*PAGE+1}~{min((page+1)*PAGE,len(tradeable))}/{len(tradeable)}개)\n"]
-        lines.append("버튼으로 선택하거나 과목명을 직접 입력하세요.\n")
+        if _kakao_lang.get(uid,"ko") == "en":
+            lines = [f"🔀 Trade Request ({page*PAGE+1}~{min((page+1)*PAGE,len(tradeable))}/{len(tradeable)})\n"]
+            lines.append("Select a course or type the course name.\n")
+        else:
+            lines = [f"🔀 트레이드 신청 ({page*PAGE+1}~{min((page+1)*PAGE,len(tradeable))}/{len(tradeable)}개)\n"]
+            lines.append("버튼으로 선택하거나 과목명을 직접 입력하세요.\n")
         btns = []
         for e in tradeable:  # 전체 목록 텍스트로 표시
             req = next((r for r in existing if r["course_key"]==e["ck"]),None)
@@ -888,8 +916,10 @@ def kakao_skill():
         if page>0:
             btns.append(_kb("◀이전", f"과목선택 {ck} {my_sec} {page-1}"))
         btns.append(_kb("↩️돌아가기","트레이드 신청"))
-        return _kt(f"📚 {cn} (현재 {my_sec}분반)\n분반 선택 ({page*PAGE+1}~{min(shown,len(all_s))}/{len(all_s)}):",
-                   btns[:6])
+        if _kakao_lang.get(uid,"ko") == "en":
+            return _kt(f"📚 {cn} (Current: Sec.{my_sec})\nSelect section ({page*PAGE+1}~{min(shown,len(all_s))}/{len(all_s)}):", btns[:6])
+        else:
+            return _kt(f"📚 {cn} (현재 {my_sec}분반)\n분반 선택 ({page*PAGE+1}~{min(shown,len(all_s))}/{len(all_s)}):", btns[:6])
 
     # 분반 선택 → 지망 확인
     if utt.startswith("분반선택 "):
@@ -905,7 +935,7 @@ def kakao_skill():
             return _kt(f"⚠️ {to_s}분반은 이미 {cur.index(to_s)+1}지망이에요.",
                        [_kb("↩️ 다른 분반",f"과목선택 {ck} {from_s}")])
         if n>3:
-            return _kt("이미 3지망까지 선택했어요.",
+            return _kt("Already selected up to 3rd preference." if _kakao_lang.get(uid,"ko")=="en" else "이미 3지망까지 선택했어요.",
                        [_kb("❌ 신청 취소","신청취소"), _kb("🏠 메뉴로","메뉴")])
         prev = " / ".join(f"{i+1}지망 {s_}분반" for i,s_ in enumerate(cur))
         if prev: prev += f" / {n}지망 {to_s}분반(예정)"
@@ -943,7 +973,7 @@ def kakao_skill():
 
     if utt=="신청제출":
         reqs = _trade_requests.get(sid,[])
-        if not reqs: return _kt("신청 내역이 없어요.", [_kb("🏠 메뉴로","메뉴")])
+        if not reqs: return _kt("No trade requests found." if _kakao_lang.get(uid,"ko")=="en" else "신청 내역이 없어요.", [_kb("🏠 메뉴로","메뉴")])
         lines = ["📤 신청 완료!\n"]
         for r in reqs:
             cn = r["course_key"].split("(")[0]
@@ -961,7 +991,7 @@ def kakao_skill():
         if not _last_match.get("students"):
             return _kt(_t(uid,"no_match_yet"), [_kb(_t(uid,"menu_btn"),"메뉴")])
         my = next((s_ for s_ in _last_match["students"] if s_["sid"]==sid),None)
-        if not my: return _kt("이번 매칭에 내 신청 내역이 없어요.", [_kb("🏠 메뉴로","메뉴")])
+        if not my: return _kt(_t(uid,"no_my_match"), [_kb("🏠 메뉴로","메뉴")])
         lines = ["📊 내 트레이드 결과\n"]
         for t in my.get("successes",[]):
             cn = t["course_key"].split("(")[0]
@@ -992,13 +1022,13 @@ def kakao_skill():
     # ── 과목 추가 ────────────────────────────────────────────
     if utt=="과목추가":
         _kakao_step[uid] = {"s":"extra_input"}
-        return _kt("➕ 과목 추가신청\n\n과목명과 분반을 입력해주세요.\n형식: 과목명 분반번호\n예) 미적분학 3",
+        return _kt("➕ Add Course\n\nEnter course name and section.\nFormat: [name] [section]\nEx) Calculus 3" if _kakao_lang.get(uid,"ko")=="en" else "➕ 과목 추가신청\n\n과목명과 분반을 입력해주세요.\n형식: 과목명 분반번호\n예) 미적분학 3",
                    [_kb("❌ 취소","취소")])
 
     # ── 분반 이동 ────────────────────────────────────────────
     if utt=="분반이동":
         enrolled, _ = get_timetable(sid)
-        if not enrolled: return _kt("시간표 정보가 없어요.", [_kb("🏠 메뉴로","메뉴")])
+        if not enrolled: return _kt("No timetable found." if _kakao_lang.get(uid,"ko")=="en" else "시간표 정보가 없어요.", [_kb("🏠 메뉴로","메뉴")])
         lines = ["🔄 분반 이동\n이동할 과목을 선택하세요:\n"]
         btns  = []
         for e in enrolled[:5]:
@@ -1032,11 +1062,15 @@ def kakao_skill():
         if page>0:
             btns.append(_kb("◀ 이전", f"이동과목 {ck} {from_s} {page-1}"))
         btns.append(_kb("↩️ 돌아가기","분반이동"))
-        return _kt(
-            f"🔄 {cn} (현재 {from_s}분반)\n"
-            f"분반 선택 ({page*PAGE+1}~{min(shown,len(all_s))}/{len(all_s)})\n"
-            f"(선생님 허락을 받은 분반으로만 이동하세요)",
-            btns[:6])
+        if _kakao_lang.get(uid,"ko") == "en":
+            msg_move = (f"🔄 {cn} (Current: Sec.{my_sec})\n"
+                        f"Select section ({page*PAGE+1}~{min(shown,len(all_s))}/{len(all_s)})\n"
+                        f"(Only move to sections approved by your teacher)")
+        else:
+            msg_move = (f"🔄 {cn} (현재 {my_sec}분반)\n"
+                        f"분반 선택 ({page*PAGE+1}~{min(shown,len(all_s))}/{len(all_s)})\n"
+                        f"(선생님 허락을 받은 분반으로만 이동하세요)")
+        return _kt(msg_move, btns[:6])
 
     if utt.startswith("이동확정 "):
         parts = utt.split(" ")
@@ -1067,7 +1101,7 @@ def kakao_skill():
 
     # ── 선생님 연락망 ────────────────────────────────────────
     if utt in ["선생님 연락망","연락망","연락처"]:
-        return _kt("📞 선생님 연락망\n\n학부를 선택하거나 이름으로 검색하세요.\n이름 검색: 검색 홍길동",
+        return _kt("📞 Teacher Contacts\n\nSelect a department or search by name.\nName search: search [name]" if _kakao_lang.get(uid,"ko")=="en" else "📞 선생님 연락망\n\n학부를 선택하거나 이름으로 검색하세요.\n이름 검색: 검색 홍길동",
                    [_kb("🏛 수리정보과학부","수리정보과학부"),
                     _kb("🔭 물리지구과학부","물리지구과학부"),
                     _kb("📚 인문예술학부","인문예술학부"),
@@ -1124,7 +1158,7 @@ def kakao_skill():
         return _kc(cards, nav[:4])
 
     if utt=="이름검색":
-        return _kt("🔍 선생님 이름 검색\n\n형식: 검색 홍길동\n성함 일부만 입력해도 됩니다.",
+        return _kt("🔍 Search Teacher\n\nFormat: search [name]\nPartial name works too." if _kakao_lang.get(uid,"ko")=="en" else "🔍 선생님 이름 검색\n\n형식: 검색 홍길동\n성함 일부만 입력해도 됩니다.",
                    [_kb("↩️ 학부 목록","선생님 연락망")])
 
     if utt.startswith("검색 "):
@@ -1148,7 +1182,8 @@ def kakao_skill():
         today  = ["월","화","수","목","금","토","일"][now.weekday()]
         now_t  = now.hour*60+now.minute
         if today not in ["월","화","수","목","금"]:
-            return _kt("오늘은 주말이라 수업이 없어요 😊\n형설관 강의실 모두 사용 가능합니다.", [_kb("🏠 메뉴로","메뉴")])
+            msg_wknd = "No classes on weekends 😊\nAll Hyungseol rooms available." if _kakao_lang.get(uid,"ko")=="en" else "오늘은 주말이라 수업이 없어요 😊\n형설관 강의실 모두 사용 가능합니다."
+            return _kt(msg_wknd, [_kb(_t(uid,"menu_btn"),"메뉴")])
         hyung = sorted(r for r in CLASSROOMS if r.startswith("형"))
         # 1학년 자습 전용 강의실 (평일 07:30~09:30)
         STUDY_ROOMS = {"형3206","형3207","형3302","형3303","형3304",
@@ -1238,7 +1273,7 @@ def kakao_skill():
                                   "to_sections":r["to_sections"]})
                 if r.get("enrolled"): em[s_id]=r["enrolled"]
         if not all_reqs:
-            return _kt("신청 내역이 없어요.", _admin_menu())
+            return _kt("No trade requests found." if _kakao_lang.get(uid,"ko")=="en" else "신청 내역이 없어요.", _admin_menu())
         try:
             chosen,cycles = solve(all_reqs,em)
             result = build_result(all_reqs,chosen,cycles)
