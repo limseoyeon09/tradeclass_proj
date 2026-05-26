@@ -677,7 +677,7 @@ _UTT_MAP = {
     "🏫 Available Rooms":"공실조회",
     "➕ Add Course":"과목추가",
     "🔄 Change Section":"분반이동",
-    "🏠 Menu":"메뉴",
+    "🏠 Menu":"menu",
     # 오픈빌더 Main menu (English) 블록 버튼들
     "My Timetable":"내 시간표",
     "Vacant Rooms":"공실조회",
