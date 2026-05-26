@@ -36,6 +36,114 @@ _kakao_users:     Dict[str, str]  = {}  # uid → sid
 _kakao_admin:     Dict[str, bool] = {}  # uid → is_admin
 _kakao_step:      Dict[str, dict] = {}  # uid → {s, ...} 로그인/입력 단계
 _kakao_pins:      Dict[str, str]  = {}  # sid → hashed_pin
+_kakao_lang:      Dict[str, str]  = {}  # uid → "ko" | "en"
+
+# ── 번역 딕셔너리 ──────────────────────────────────────────
+_T = {
+    "ko": {
+        "welcome":       "안녕하세요! TradeTable입니다 🟡\n\n한과영 학번을 입력해주세요.\n예) 25-096",
+        "enter_id":      "한과영 학번을 입력해주세요.\n예) 25-096",
+        "enter_name":    "본인 확인을 위해 이름을 입력해주세요.",
+        "name_ok":       "✅ 이름 확인!\n처음 로그인이에요.\n\n사용할 4자리 PIN을 설정해주세요.",
+        "name_ok_exist": "✅ 이름 확인!\n\n4자리 PIN을 입력해주세요.",
+        "name_fail":     "❌ 이름이 일치하지 않아요.\n학번부터 다시 입력해주세요.",
+        "pin_set":       "숫자 4자리를 입력해주세요. (예: 1234)",
+        "pin_confirm":   "PIN을 한 번 더 입력해 확인할게요.",
+        "pin_mismatch":  "PIN이 일치하지 않아요.\n다시 4자리 PIN을 입력해주세요.",
+        "pin_ok":        "🔐 PIN 설정 완료!\n{name}님 환영해요 👋",
+        "login_ok":      "✅ 로그인 성공!\n{name}님 환영해요 👋",
+        "pin_fail":      "❌ PIN이 틀렸어요.\n학번부터 다시 입력해주세요.",
+        "id_not_found":  "❌ {sid}은 등록되지 않은 학번이에요.\n다시 입력해주세요.",
+        "menu_q":        "{name}님, 무엇을 도와드릴까요?",
+        "logout_done":   "로그아웃 됐습니다.\n학번을 입력해 다시 로그인하세요.",
+        "cancel_done":   "취소됐습니다.",
+        "period_closed": "⚠️ 현재 트레이드 신청 기간이 아닙니다.",
+        "trade_cancelled":"신청이 취소됐습니다.",
+        "no_match_yet":  "아직 매칭 결과가 없어요.",
+        "no_my_match":   "이번 매칭에 내 신청 내역이 없어요.",
+        "trade_result":  "📊 내 트레이드 결과\n",
+        "success_line":  "✅ {cn}: {fr}분반 → {to}분반 성공!",
+        "fail_line":     "❌ {cn}: {fr}분반 → 실패",
+        "conflict_hint": "⚠️ {to}분반 → {course}({slot})와 시간 충돌",
+        "submitted_tail":"관리자 매칭 후 결과를 확인하세요.",
+        "timetable":"📅 내 시간표", "free":"공강",
+        "trade":"🔀 트레이드 신청", "result":"📊 결과 확인",
+        "prof":"📞 선생님 연락망", "room":"🏫 형설관 공실",
+        "add_course":"➕ 과목 추가", "move_sec":"🔄 분반 이동",
+        "change_id":"🔄 다른 학번", "menu_btn":"🏠 메뉴로",
+        "cancel_btn":"❌ 취소", "lang_btn":"🌐 English",
+        "back":"↩️ 돌아가기", "next":"▶ 다음", "prev":"◀ 이전",
+    },
+    "en": {
+        "welcome":       "Hello! This is TradeTable 🟡\n\nPlease enter your KSA student ID.\nEx) 25-096",
+        "enter_id":      "Please enter your KSA student ID.\nEx) 25-096",
+        "enter_name":    "Please enter your name for verification.",
+        "name_ok":       "✅ Name verified!\nFirst login.\n\nPlease set a 4-digit PIN.",
+        "name_ok_exist": "✅ Name verified!\n\nPlease enter your PIN.",
+        "name_fail":     "❌ Name does not match.\nPlease start again with your student ID.",
+        "pin_set":       "Enter 4 digits. (e.g. 1234)",
+        "pin_confirm":   "Enter the PIN once more to confirm.",
+        "pin_mismatch":  "PINs do not match.\nPlease enter a new 4-digit PIN.",
+        "pin_ok":        "🔐 PIN set!\nWelcome, {name}! 👋",
+        "login_ok":      "✅ Login successful!\nWelcome, {name}! 👋",
+        "pin_fail":      "❌ Incorrect PIN.\nPlease start again with your student ID.",
+        "id_not_found":  "❌ {sid} is not a registered ID.\nPlease try again.",
+        "menu_q":        "{name}, how can I help you?",
+        "logout_done":   "Logged out.\nEnter your student ID to log in again.",
+        "cancel_done":   "Cancelled.",
+        "period_closed": "⚠️ Trade requests are not open now.",
+        "trade_cancelled":"Trade request cancelled.",
+        "no_match_yet":  "No matching results yet.",
+        "no_my_match":   "No trade request found for this round.",
+        "trade_result":  "📊 My Trade Results\n",
+        "success_line":  "✅ {cn}: Section {fr} → Section {to} Success!",
+        "fail_line":     "❌ {cn}: Section {fr} → Failed",
+        "conflict_hint": "⚠️ Sec {to} conflicts with {course} ({slot})",
+        "submitted_tail":"Check results after admin runs matching.",
+        "timetable":"📅 My Timetable", "free":"Free",
+        "trade":"🔀 Trade Request", "result":"📊 Results",
+        "prof":"📞 Teacher Contacts", "room":"🏫 Available Rooms",
+        "add_course":"➕ Add Course", "move_sec":"🔄 Change Section",
+        "change_id":"🔄 Switch Account", "menu_btn":"🏠 Menu",
+        "cancel_btn":"❌ Cancel", "lang_btn":"🌐 한국어",
+        "back":"↩️ Back", "next":"▶ Next", "prev":"◀ Prev",
+    }
+}
+
+def _t(uid: str, key: str, **kw) -> str:
+    lang = _kakao_lang.get(uid, "ko")
+    text = _T[lang].get(key, _T["ko"].get(key, key))
+    return text.format(**kw) if kw else text
+
+def _menu_for(uid: str) -> list:
+    return [
+        _kb(_t(uid,"timetable"), "내 시간표"),
+        _kb(_t(uid,"trade"),     "트레이드 신청"),
+        _kb(_t(uid,"result"),    "결과 확인"),
+        _kb(_t(uid,"prof"),      "선생님 연락망"),
+        _kb(_t(uid,"add_course"),"과목추가"),
+        _kb(_t(uid,"move_sec"),  "분반이동"),
+        _kb(_t(uid,"room"),      "공실조회"),
+        _kb(_t(uid,"lang_btn"),  "언어전환"),
+    ]
+
+def _t(uid: str, key: str, **kw) -> str:
+    """uid의 언어 설정에 맞게 번역 반환"""
+    lang = _kakao_lang.get(uid, "ko")
+    text = _T[lang].get(key, _T["ko"].get(key, key))
+    return text.format(**kw) if kw else text
+
+def _menu_for(uid: str) -> list:
+    return [
+        _kb(_t(uid,"timetable"), "내 시간표"),
+        _kb(_t(uid,"trade"),     "트레이드 신청"),
+        _kb(_t(uid,"result"),    "결과 확인"),
+        _kb(_t(uid,"prof"),      "선생님 연락망"),
+        _kb(_t(uid,"add_course"),"과목추가"),
+        _kb(_t(uid,"move_sec"),  "분반이동"),
+        _kb(_t(uid,"room"),      "공실조회"),
+        _kb(_t(uid,"lang_btn"),  "언어전환"),
+    ]
 
 # ── 유틸 ────────────────────────────────────────────────────
 def _norm(sid: str) -> str:
@@ -174,16 +282,19 @@ def build_result(reqs, chosen, cycles):
 def apply_match_to_timetable(result: dict):
     """
     매칭 결과를 _approved_moves에 자동 반영.
-    성공한 트레이드를 시간표에 즉시 적용.
+    성공한 트레이드: 시간표 적용 + _trade_requests에서 제거
+    실패한 트레이드: _trade_requests에 유지 (다음 매칭 때 자동 사용)
     """
     for student in result.get("students", []):
         sid = student["sid"]
+
+        # ── 성공한 트레이드 → 시간표 반영 + 신청 제거 ──
+        success_cks = set()
         for t in student.get("successes", []):
             ck     = t["course_key"]
             to_sec = t["to"]
             info   = COURSES.get(ck, {})
             new_slots = info.get("slots", {}).get(to_sec, [])
-            # 강의실 찾기
             new_room = ""
             if new_slots:
                 cn = ck.split("(")[0]
@@ -192,16 +303,27 @@ def apply_match_to_timetable(result: dict):
                     v = sched.get(sk, "")
                     if cn in v and f"_{to_sec}" in v:
                         new_room = room; break
-            entry = {
-                "ck":         ck,
-                "new_section": to_sec,
-                "new_slots":  new_slots,
-                "new_room":   new_room,
-            }
+            entry = {"ck": ck, "new_section": to_sec,
+                     "new_slots": new_slots, "new_room": new_room}
             _approved_moves.setdefault(sid, [])
-            # 기존 같은 과목 이동 내역 덮어쓰기
             _approved_moves[sid] = [m for m in _approved_moves[sid] if m["ck"] != ck]
             _approved_moves[sid].append(entry)
+            success_cks.add(ck)
+
+        # ── 성공한 과목만 신청 목록에서 제거 (실패는 유지) ──
+        if sid in _trade_requests and success_cks:
+            _trade_requests[sid] = [
+                r for r in _trade_requests[sid]
+                if r["course_key"] not in success_cks
+            ]
+            # 모두 성공했으면 키 자체 제거
+            if not _trade_requests[sid]:
+                del _trade_requests[sid]
+            else:
+                # 남은 실패 신청의 enrolled 갱신 (분반 변경 반영)
+                live_enrolled, _ = get_timetable(sid)
+                for r in _trade_requests[sid]:
+                    r["enrolled"] = live_enrolled
 
 # ═══════════════════════════════════════════════════════════
 # 웹 API 라우트
@@ -367,9 +489,21 @@ _UTT_MAP = {
     "📚 인문예술학부":"인문예술학부",
     "🧪 화학생물학부":"화학생물학부",
     "🔄 다른 학번":"로그아웃", "다른 학번":"로그아웃",
-    "로그아웃":"로그아웃", "❌ 취소":"취소",
-    # 결과 후 시간표
+    "🔄 Switch Account":"로그아웃",
+    "로그아웃":"로그아웃", "❌ 취소":"취소", "❌ Cancel":"취소",
     "📅 현재 시간표":"내 시간표",
+    # 언어 전환
+    "🌐 English":"언어전환", "🌐 한국어":"언어전환",
+    "언어전환":"언어전환", "영어":"언어전환", "한국어":"언어전환",
+    # 영어 메뉴 별칭
+    "📅 My Timetable":"내 시간표",
+    "🔀 Trade Request":"트레이드 신청",
+    "📊 Results":"결과 확인",
+    "📞 Teacher Contacts":"선생님 연락망",
+    "🏫 Available Rooms":"공실조회",
+    "➕ Add Course":"과목추가",
+    "🔄 Change Section":"분반이동",
+    "🏠 Menu":"메뉴",
 }
 
 
@@ -386,12 +520,16 @@ def _kc(cards, btns=None):
 def _kb(label, msg=None):
     return {"label":label[:14],"action":"message","messageText":msg or label}
 
-def _menu():
+def _menu(uid=""):
+    """uid가 있으면 언어 설정 반영, 없으면 한국어"""
+    if uid:
+        return _menu_for(uid)
     return [
         _kb("📅 내 시간표"), _kb("🔀 트레이드 신청"),
         _kb("📊 결과 확인"), _kb("📞 선생님 연락망"),
         _kb("➕ 과목 추가","과목추가"), _kb("🔄 분반 이동","분반이동"),
         _kb("🏫 형설관 공실","공실조회"), _kb("🔄 다른 학번","로그아웃"),
+        _kb("🌐 English","언어전환"),
     ]
 
 def _admin_menu():
@@ -451,14 +589,14 @@ def kakao_skill():
     if utt == "로그아웃":
         for d_ in [_kakao_users,_kakao_admin,_kakao_step]:
             d_.pop(uid, None)
-        return _kt("로그아웃 됐습니다.\n학번을 입력해 다시 로그인하세요.")
+        return _kt(_t(uid,"logout_done"))
 
     # ── 취소 ────────────────────────────────────────────────
     if utt == "취소":
         _kakao_step.pop(uid, None)
         if sid:
-            return _kt(f"취소됐습니다.", _menu())
-        return _kt("취소됐습니다.\n학번을 입력해 로그인하세요.")
+            return _kt(_t(uid,"cancel_done"), _menu(uid))
+        return _kt(_t(uid,"cancel_done"))
 
     # ── 미로그인: 로그인 흐름 ────────────────────────────────
     if not sid:
@@ -497,8 +635,7 @@ def kakao_skill():
                 _kakao_pins[psid] = _hash(utt_raw)
                 _kakao_users[uid] = psid
                 _kakao_step.pop(uid, None)
-                return _kt(f"🔐 PIN 설정 완료!\n{_get_name(psid)}님 환영해요 👋",
-                           _menu())
+                return _kt(_t(uid,"pin_ok",name=_get_name(psid)), _menu(uid))
             else:
                 _kakao_step[uid] = {"s":"pin_set","sid":psid}
                 return _kt("PIN이 일치하지 않아요.\n다시 4자리 PIN을 입력해주세요.",
@@ -510,8 +647,7 @@ def kakao_skill():
             if _hash(utt_raw) == _kakao_pins.get(psid, "X"):
                 _kakao_users[uid] = psid
                 _kakao_step.pop(uid, None)
-                return _kt(f"✅ 로그인 성공!\n{_get_name(psid)}님 환영해요 👋",
-                           _menu())
+                return _kt(_t(uid,"login_ok",name=_get_name(psid)), _menu(uid))
             else:
                 _kakao_step.pop(uid, None)
                 return _kt("❌ PIN이 틀렸어요.\n학번부터 다시 입력해주세요.")
@@ -612,8 +748,8 @@ def kakao_skill():
 
     # ── 메뉴 ────────────────────────────────────────────────
     if utt in ["메뉴","처음으로","홈","시작","메인"]:
-        btns = _admin_menu() if is_admin else _menu()
-        return _kt(f"{name}님, 무엇을 도와드릴까요?", btns)
+        btns = _admin_menu() if is_admin else _menu(uid)
+        return _kt(_t(uid,"menu_q",name=name), btns)
 
     # ── 관리자 진입 ──────────────────────────────────────────
     if utt.startswith("관리자 "):
@@ -648,7 +784,7 @@ def kakao_skill():
     # ── 트레이드 신청 ────────────────────────────────────────
     if utt in ["트레이드 신청","신청"] or utt.startswith("과목목록 "):
         if not is_period_open():
-            return _kt("⚠️ 현재 트레이드 신청 기간이 아닙니다.", [_kb("🏠 메뉴로","메뉴")])
+            return _kt(_t(uid,"period_closed"), [_kb(_t(uid,"menu_btn"),"메뉴")])
         enrolled, _ = get_timetable(sid)
         tradeable = [e for e in enrolled
                      if e["ck"] in COURSES and len(COURSES[e["ck"]]["sections"])>=2]
@@ -806,12 +942,12 @@ def kakao_skill():
 
     if utt=="신청취소":
         _trade_requests.pop(sid,None)
-        return _kt("신청이 취소됐습니다.", _menu())
+        return _kt(_t(uid,"trade_cancelled"), _menu(uid))
 
     # ── 결과 확인 ────────────────────────────────────────────
     if utt in ["결과 확인","결과"]:
         if not _last_match.get("students"):
-            return _kt("아직 매칭 결과가 없어요.", [_kb("🏠 메뉴로","메뉴")])
+            return _kt(_t(uid,"no_match_yet"), [_kb(_t(uid,"menu_btn"),"메뉴")])
         my = next((s_ for s_ in _last_match["students"] if s_["sid"]==sid),None)
         if not my: return _kt("이번 매칭에 내 신청 내역이 없어요.", [_kb("🏠 메뉴로","메뉴")])
         lines = ["📊 내 트레이드 결과\n"]
