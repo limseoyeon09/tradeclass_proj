@@ -90,7 +90,7 @@ _T = {
         "extra_format_err":"형식: 과목명 분반번호\n예) 미적분학 3",
         "move_prompt":"🔄 분반 이동\n이동할 과목을 선택하세요:",
         "admin_wrong_pw":"❌ 비밀번호가 틀렸습니다.",
-        "fallback":_t(uid,"fallback"),
+        "fallback":"죄송해요, 잘 이해하지 못했어요 😅\n아래 메뉴에서 선택해주세요.",
         "already_3rd":"이미 3지망까지 선택했어요.",
         "no_requests":"신청 내역이 없어요.",
     },
