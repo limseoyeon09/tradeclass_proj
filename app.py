@@ -577,7 +577,18 @@ def kakao_skill():
     step    = _kakao_step.get(uid, {})
     is_admin= _kakao_admin.get(uid, False)
 
-    # ── 카카오 시스템 메시지 무시 ───────────────────────────
+    # ── 언어 전환 ───────────────────────────────────────
+    if utt == "언어전환":
+        cur = _kakao_lang.get(uid, "ko")
+        new_lang = "en" if cur == "ko" else "ko"
+        _kakao_lang[uid] = new_lang
+        if new_lang == "en":
+            msg = "\U0001f310 Switched to English!\nWhat can I help you with?"
+        else:
+            msg = "\U0001f310 \ud55c\uad6d\uc5b4\ub85c \uc804\ud658\ub429\ub2c8\ub2e4!\n\ubb34\uc5c7\uc744 \ub3c4\uc640\ub4dc\ub9b4\uae4c\uc694?"
+        return _kt(msg, _menu(uid))
+
+    # ── 카카오 시스템 메시지 무시 ───────────────────────
     # 채널 추가/차단 등 시스템 발화는 무시
     if any(kw in utt_raw for kw in ["채널을 추가", "채널 추가", "채널을 차단", "대화 상대를 차단"]):
         if not sid:
@@ -824,7 +835,8 @@ def kakao_skill():
                  "과목추가","분반이동","공실조회","로그아웃","취소","결과",
                  "신청제출","신청취소","이름검색","수리정보","물리지구","인문예술","화학생물",
                  "신청현황","매칭실행","기간열기","기간닫기","내 시간표","시간표",
-                 "트레이드","선생님","연락망","extra_yes","move_yes","학부상세","영역보기")
+                 "트레이드","선생님","연락망","extra_yes","move_yes","학부상세","영역보기",
+                 "언어전환","영어","한국어")
     if not any(utt.startswith(r) or utt==r for r in _RESERVED):
         # 수강 중인 과목명과 매칭 시도
         enrolled, _ = get_timetable(sid)
